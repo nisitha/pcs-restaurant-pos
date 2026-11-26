@@ -10,16 +10,16 @@ import {
   Wallet,
   ArrowDownRight,
   ArrowUpRight,
-  ShieldAlert,
   ChevronDown,
   MonitorCheck,
   ChefHat,
   Smartphone,
   LayoutDashboard,
   Layers,
+  Utensils,
+  Grid3X3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/stores/auth-store';
 import { useShiftStore } from '@/stores/shift-store';
 import { OpenShiftDialog } from '@/components/shifts/open-shift-dialog';
@@ -50,8 +50,10 @@ export function NavBar() {
 
   const navLinks = [
     { href: '/pos', label: 'POS Billing', icon: MonitorCheck, roles: ['cashier', 'manager', 'owner', 'super_admin'] },
+    { href: '/tables', label: 'Floor Plan', icon: Grid3X3, roles: ['cashier', 'waiter', 'manager', 'owner', 'super_admin'] },
     { href: '/kds', label: 'Kitchen KDS', icon: ChefHat, roles: ['chef', 'manager', 'owner', 'super_admin'] },
     { href: '/waiter', label: 'Waiter Panel', icon: Smartphone, roles: ['waiter', 'manager', 'owner', 'super_admin'] },
+    { href: '/admin/menu', label: 'Menu Catalog', icon: Utensils, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/shifts', label: 'Shifts & Drawer', icon: Layers, roles: ['cashier', 'manager', 'owner', 'super_admin'] },
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['manager', 'owner', 'super_admin'] },
   ];
@@ -70,7 +72,7 @@ export function NavBar() {
       <header className="sticky top-0 z-40 w-full bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           {/* Logo & Navigation */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-5">
             <Link href="/" className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center font-bold">
                 <UtensilsCrossed className="w-5 h-5" />
@@ -82,7 +84,7 @@ export function NavBar() {
             </Link>
 
             {/* Nav Links */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-1">
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
@@ -166,7 +168,7 @@ export function NavBar() {
                     className="h-8 bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold gap-1.5"
                   >
                     <Wallet className="w-3.5 h-3.5" />
-                    <span>Open Cash Shift</span>
+                    <span>Open Shift</span>
                   </Button>
                 )}
               </div>
