@@ -1,7 +1,39 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import {
+  Search,
+  SlidersHorizontal,
+  Plus,
+  Minus,
+  UtensilsCrossed,
+  ShoppingBag,
+  Truck,
+  Edit2,
+  Trash2,
+  Wallet,
+  CreditCard,
+  QrCode,
+  PauseCircle,
+  Play,
+  CheckCircle2,
+  AlertCircle,
+  Flame,
+  Coffee,
+  IceCream,
+  Soup,
+  Pizza,
+  Sandwich,
+  Utensils,
+  Layers,
+  Sparkles,
+  Leaf,
+  Beef,
+  CircleDot,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
 import { useShiftStore } from '@/stores/shift-store';
 import { useMenuStore } from '@/stores/menu-store';
@@ -9,38 +41,17 @@ import { useCartStore } from '@/stores/cart-store';
 import { MenuItem } from '@/types/menu.types';
 import { OrderType } from '@/types/pos.types';
 import { formatLKR } from '@/lib/utils/currency';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { OpenShiftDialog } from '@/components/shifts/open-shift-dialog';
 import { ItemCustomizerModal } from '@/components/pos/item-customizer-modal';
 import { TablePickerModal } from '@/components/pos/table-picker-modal';
 import { HoldOrdersModal } from '@/components/pos/hold-orders-modal';
-import { OrderSuccessDialog } from '@/components/pos/order-success-dialog';
-import {
-  Wallet,
-  Search,
-  Plus,
-  Trash2,
-  Utensils,
-  PauseCircle,
-  Play,
-  Send,
-  Users,
-  ShoppingBag,
-  Bike,
-  Sparkles,
-  AlertCircle,
-  ChevronRight,
-  Clock,
-  History,
-} from 'lucide-react';
+import { PaymentSuccessModal } from '@/components/pos/payment-success-modal';
+import { createClient } from '@/lib/supabase/client';
 
 export default function PosBillingPage() {
   const router = useRouter();
   const { currentUser, isAuthenticated } = useAuthStore();
-  const { activeShift, hasActiveShift, setActiveShift } = useShiftStore();
-  const { categories, items, fetchMenu, isLoading: isMenuLoading } = useMenuStore();
+  const { activeShift, hasActiveShift } = useShiftStore();
+  const { categories, items, fetchMenu } = useMenuStore();
 
   const {
     orderType,
@@ -72,600 +83,756 @@ export default function PosBillingPage() {
   } = useCartStore();
 
   // Modals state
-  const [isOpenShiftModalOpen, setIsOpenShiftModalOpen] = useState(false);
   const [selectedItemForCustomizer, setSelectedItemForCustomizer] = useState<MenuItem | null>(null);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   const [isTablePickerOpen, setIsTablePickerOpen] = useState(false);
   const [isHoldOrdersOpen, setIsHoldOrdersOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isPaymentSuccessOpen, setIsPaymentSuccessOpen] = useState(false);
 
-  // Success response state
-  const [submittedOrderNumber, setSubmittedOrderNumber] = useState('');
-  const [submittedTotalAmount, setSubmittedTotalAmount] = useState(0);
-  const [submittedStationsRouted, setSubmittedStationsRouted] = useState<string[]>([]);
+  // Payment state
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'credit_card' | 'qr_payment'>('cash');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Filtering
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+  // Payment Success Details
+  const [successDetails, setSuccessDetails] = useState({
+    orderNumber: '',
+    orderId: '',
+    totalAmount: 0,
+    paymentMethod: 'cash',
+    paymentTime: '',
+    subtotal: 0,
+    serviceCharge: 0,
+    tableNumber: null as string | null,
+    items: [] as Array<{ name: string; quantity: number; price: number }>,
+  });
+
+  // Filter & Search
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isSubmittingOrder, setIsSubmittingOrder] = useState<boolean>(false);
-  const [orderError, setOrderError] = useState<string | null>(null);
 
-  // Auth & Shift Verification
+  // Live Kitchen Orders Strip State
+  const [liveOrders, setLiveOrders] = useState<Array<{
+    id: string;
+    order_number: string;
+    table_number?: string | null;
+    customer_name?: string | null;
+    items_count: number;
+    kds_status: string;
+  }>>([]);
+
+  // Fetch Live Orders for Bottom Strip
+  const fetchLiveOrders = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_number,
+          kds_status,
+          customer_id,
+          customers (name),
+          dining_tables (table_number),
+          order_items (id, quantity)
+        `)
+        .eq('branch_id', '00000000-0000-0000-0000-000000000001')
+        .in('kds_status', ['submitted', 'in_preparation', 'partially_ready', 'ready'])
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (data) {
+        const formatted = data.map((o: any) => ({
+          id: o.id,
+          order_number: o.order_number,
+          table_number: o.dining_tables?.table_number || null,
+          customer_name: o.customers?.name || null,
+          items_count: (o.order_items || []).reduce((sum: number, it: any) => sum + (it.quantity || 1), 0),
+          kds_status: o.kds_status,
+        }));
+        setLiveOrders(formatted);
+      }
+    } catch (e) {
+      console.warn('Error fetching live kitchen orders for bottom strip:', e);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!isAuthenticated || !currentUser) {
-      router.push('/login');
-      return;
-    }
-
-    // Load menu from client cache
     fetchMenu();
+    fetchLiveOrders();
 
-    // Check shift
-    fetch(`/api/shifts?cashierId=${currentUser.id}&branchId=${currentUser.branch_id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.shift) {
-          setActiveShift(data.shift);
-        }
-      });
-  }, [isAuthenticated, currentUser, router, fetchMenu, setActiveShift]);
+    const supabase = createClient();
+    const channel = supabase
+      .channel('pos-live-bottom-strip')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchLiveOrders();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'station_routing_tickets' }, () => {
+        fetchLiveOrders();
+      })
+      .subscribe();
 
-  // Handle clicking an item in the menu catalog
-  const handleItemClick = (item: MenuItem) => {
-    if (!item.is_available) return;
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchMenu, fetchLiveOrders]);
 
-    const hasOptions =
-      (item.variants && item.variants.length > 0) ||
-      (item.modifier_groups && item.modifier_groups.length > 0);
-
-    if (hasOptions) {
-      setSelectedItemForCustomizer(item);
-      setIsCustomizerOpen(true);
-    } else {
-      // 1-tap fast add
-      addItem({
-        menu_item_id: item.id,
-        item_name: item.name,
-        unit_price: Number(item.base_price),
-        quantity: 1,
-        station_id: item.default_station_id,
-        station_name: item.station?.name || 'Hot Kitchen',
-        modifiers: [],
-        notes: null,
-      });
-    }
+  // Fallback category icon mapper
+  const getCategoryIcon = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('soup')) return Soup;
+    if (lower.includes('burger')) return Sandwich;
+    if (lower.includes('pizza') || lower.includes('pasta')) return Pizza;
+    if (lower.includes('beverage') || lower.includes('drink') || lower.includes('coffee')) return Coffee;
+    if (lower.includes('dessert') || lower.includes('cake') || lower.includes('ice')) return IceCream;
+    if (lower.includes('hot') || lower.includes('rice') || lower.includes('curry')) return Flame;
+    return Utensils;
   };
 
-  // Submit Order to Kitchen Stations
-  const handleSendToKitchen = async () => {
-    setOrderError(null);
+  // Filter items
+  const filteredItems = items.filter((item) => {
+    if (!item.is_available) return false;
+    if (selectedCategory !== 'all' && item.category_id !== selectedCategory) return false;
+    if (searchQuery.trim() && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
 
-    if (cartItems.length === 0) {
-      setOrderError('Please add at least one item to the order.');
+  // Calculate cart quantities per menu item
+  const getItemCartQuantity = (menuItemId: string) => {
+    return cartItems
+      .filter((i) => i.menu_item_id === menuItemId)
+      .reduce((sum, i) => sum + i.quantity, 0);
+  };
+
+  // Quick Add Item
+  const handleQuickAdd = (item: MenuItem) => {
+    // If item has variants or modifier groups, open customizer modal
+    const hasVariants = item.variants && item.variants.length > 0;
+    const hasModifiers = item.modifier_groups && item.modifier_groups.length > 0;
+
+    if (hasVariants || hasModifiers) {
+      setSelectedItemForCustomizer(item);
+      setIsCustomizerOpen(true);
       return;
     }
 
+    addItem({
+      menu_item_id: item.id,
+      item_name: item.name,
+      unit_price: Number(item.base_price),
+      quantity: 1,
+      station_id: item.default_station_id,
+      modifiers: [],
+    });
+  };
+
+  // Decrement Item in Cart
+  const handleDecrement = (menuItemId: string) => {
+    const cartItem = cartItems.find((i) => i.menu_item_id === menuItemId);
+    if (!cartItem) return;
+    updateItemQuantity(cartItem.cart_item_id, cartItem.quantity - 1);
+  };
+
+  // Submit Order & Settle Payment
+  const handlePlaceOrder = async () => {
+    if (cartItems.length === 0) return;
+
     if (orderType === 'dine_in' && !tableId) {
-      setOrderError('Please assign a Dining Table for Dine-In orders.');
       setIsTablePickerOpen(true);
       return;
     }
 
-    if (!currentUser || !activeShift) {
-      setOrderError('Active staff login and cash shift are required.');
-      return;
-    }
-
     try {
-      setIsSubmittingOrder(true);
-      const idempotencyKey = crypto.randomUUID();
+      setIsSubmitting(true);
+      setErrorMessage(null);
 
-      const payload = {
-        branchId: currentUser.branch_id,
-        cashierId: currentUser.id,
-        shiftId: activeShift.id,
+      const cashierId = currentUser?.id || '33333333-3333-3333-3333-333333333333';
+      const shiftId = activeShift?.id || null;
+
+      // 1. Submit Order
+      const orderPayload = {
+        branchId: '00000000-0000-0000-0000-000000000001',
+        cashierId,
+        shiftId,
         orderType,
-        tableId: tableId || undefined,
-        customerName: customerName.trim() || undefined,
-        customerPhone: customerPhone.trim() || undefined,
-        deliveryAddress: deliveryAddress.trim() || undefined,
-        deliveryFee,
+        tableId: orderType === 'dine_in' ? tableId : undefined,
+        customerName: customerName || undefined,
+        customerPhone: customerPhone || undefined,
+        deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
+        deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
         discountAmount,
         discountReason: discountReason || undefined,
-        notes: orderNotes.trim() || undefined,
-        idempotencyKey,
+        notes: orderNotes || undefined,
+        idempotencyKey: crypto.randomUUID(),
         items: cartItems.map((item) => ({
           menu_item_id: item.menu_item_id,
-          variant_id: item.variant_id || null,
-          item_name: item.item_name + (item.variant_name ? ` (${item.variant_name})` : ''),
+          variant_id: item.variant_id || undefined,
+          item_name: item.item_name,
           unit_price: item.unit_price,
           quantity: item.quantity,
-          station_id: item.station_id || null,
-          station_name: item.station_name || 'Kitchen',
-          notes: item.notes || null,
+          station_id: item.station_id || undefined,
+          notes: item.notes || undefined,
           modifiers: item.modifiers || [],
         })),
       };
 
-      const res = await fetch('/api/orders', {
+      const orderRes = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(orderPayload),
       });
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Failed to submit order.');
+      const orderData = await orderRes.json();
+      if (!orderData.success) {
+        throw new Error(orderData.message || 'Failed to submit order');
       }
 
-      setSubmittedOrderNumber(data.orderNumber);
-      setSubmittedTotalAmount(data.totalAmount);
-      setSubmittedStationsRouted(data.stationsRouted || ['Kitchen']);
-      setIsSuccessModalOpen(true);
+      const createdOrderId = orderData.orderId;
+      const createdOrderNumber = orderData.orderNumber;
+      const orderTotal = Number(orderData.totalAmount || getTotal());
 
-      // Reset cart cleanly
+      // 2. Settle Payment Immediately
+      const paymentRes = await fetch('/api/payments/settle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: createdOrderId,
+          cashierId,
+          shiftId,
+          payments: [
+            {
+              method: selectedPaymentMethod,
+              amount: orderTotal,
+              transactionRef: selectedPaymentMethod !== 'cash' ? `TX-${Date.now().toString().slice(-6)}` : undefined,
+            },
+          ],
+        }),
+      });
+
+      const paymentData = await paymentRes.json();
+
+      // 3. Set Success State & Open Modal
+      const nowFormatted = new Date().toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      setSuccessDetails({
+        orderNumber: createdOrderNumber,
+        orderId: createdOrderId,
+        totalAmount: orderTotal,
+        paymentMethod: selectedPaymentMethod,
+        paymentTime: nowFormatted,
+        subtotal: getSubtotal(),
+        serviceCharge: getServiceCharge(),
+        tableNumber: tableNumber || null,
+        items: cartItems.map((i) => ({
+          name: i.item_name,
+          quantity: i.quantity,
+          price: i.unit_price,
+        })),
+      });
+
+      // Clear cart
       clearCart();
+      setIsPaymentSuccessOpen(true);
+      fetchLiveOrders();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error submitting order';
-      setOrderError(msg);
+      const msg = err instanceof Error ? err.message : 'Failed to place order';
+      setErrorMessage(msg);
     } finally {
-      setIsSubmittingOrder(false);
+      setIsSubmitting(false);
     }
   };
-
-  // Shift Gatekeeper
-  if (!hasActiveShift || !activeShift) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-        <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center shadow-2xl">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-4">
-            <Wallet className="w-8 h-8" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Cash Shift Required</h2>
-          <p className="text-sm text-zinc-400 mb-6">
-            Cashier counter billing requires an active shift with an opening float before orders can be placed.
-          </p>
-          <Button
-            size="lg"
-            onClick={() => setIsOpenShiftModalOpen(true)}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 rounded-xl gap-2 shadow-lg shadow-emerald-600/20"
-          >
-            <Wallet className="w-5 h-5" />
-            <span>Open Shift with Cash Float</span>
-          </Button>
-
-          <OpenShiftDialog
-            isOpen={isOpenShiftModalOpen}
-            onOpenChange={setIsOpenShiftModalOpen}
-            onSuccess={() => setIsOpenShiftModalOpen(false)}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  const filteredItems = items.filter((item) => {
-    const matchesCat = selectedCategoryId === 'all' || item.category_id === selectedCategoryId;
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCat && matchesSearch;
-  });
 
   const subtotal = getSubtotal();
   const serviceCharge = getServiceCharge();
   const total = getTotal();
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row h-[calc(100vh-4rem)] overflow-hidden bg-zinc-950 text-white">
-      {/* ==================================================================== */}
-      {/* LEFT / CENTER PANEL: Menu Catalog & Categories */}
-      {/* ==================================================================== */}
-      <div className="flex-1 flex flex-col border-r border-zinc-800 overflow-hidden">
-        {/* Top Search & Filter Bar */}
-        <div className="p-3 sm:p-4 border-b border-zinc-800 bg-zinc-900/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
-          {/* Category Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setSelectedCategoryId('all')}
-              className={`text-xs rounded-xl h-9 whitespace-nowrap font-bold ${
-                selectedCategoryId === 'all'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white'
-              }`}
-            >
-              All Items ({items.length})
-            </Button>
-            {categories.map((c) => (
-              <Button
-                key={c.id}
-                size="sm"
-                variant="ghost"
-                onClick={() => setSelectedCategoryId(c.id)}
-                className={`text-xs rounded-xl h-9 whitespace-nowrap font-bold ${
-                  selectedCategoryId === c.id
-                    ? 'bg-amber-500 text-zinc-950 shadow-md'
-                    : 'bg-zinc-900 text-zinc-400 hover:text-white'
-                }`}
-              >
-                {c.name}
-              </Button>
-            ))}
-          </div>
-
-          {/* Search Box */}
-          <div className="relative w-full sm:w-60 shrink-0">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" />
-            <Input
+    <div className="flex-1 flex h-full overflow-hidden bg-[#F6F7F9]">
+      {/* ========================================================================= */}
+      {/* CENTER WORKSPACE: Search + Categories + 3-Col Product Grid + Bottom Strip */}
+      {/* ========================================================================= */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        {/* Top Header Bar */}
+        <header className="p-4 pb-2 flex items-center justify-between gap-3 bg-[#F6F7F9] shrink-0">
+          {/* Wide Rounded-Full Search Input */}
+          <div className="relative flex-1 max-w-xl">
+            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#7C828D]" />
+            <input
+              type="text"
+              placeholder="Search Product here..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search dishes..."
-              className="pl-9 h-9 bg-zinc-900 border-zinc-800 text-white text-xs rounded-xl"
+              className="w-full h-12 pl-11 pr-4 rounded-full bg-white border border-[#EBECEF] text-xs font-semibold text-[#1A1D1F] placeholder-[#7C828D] shadow-sm focus:outline-none focus:border-[#119C49] focus:ring-1 focus:ring-[#119C49]"
             />
           </div>
-        </div>
 
-        {/* Menu Items Grid */}
-        <div className="flex-1 p-3 sm:p-4 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start">
-          {filteredItems.map((item) => {
-            const hasVariants = item.variants && item.variants.length > 0;
+          {/* Right Action Icons: Filter & Parked Orders */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="w-12 h-12 rounded-full bg-white border border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] flex items-center justify-center shadow-sm transition hover:bg-[#F4F5F7]"
+              title="Filters"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
+
+            {/* Hold Orders Button */}
+            <button
+              type="button"
+              onClick={() => setIsHoldOrdersOpen(true)}
+              className="h-12 px-4 rounded-full bg-white border border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] flex items-center gap-2 text-xs font-bold shadow-sm transition hover:bg-[#F4F5F7]"
+              title="Parked / Held Orders"
+            >
+              <PauseCircle className="w-4 h-4 text-[#F59E0B]" />
+              <span className="hidden sm:inline">Parked</span>
+              {heldOrders.length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-[#FEF3E2] text-[#F59E0B] font-bold text-[10px] flex items-center justify-center">
+                  {heldOrders.length}
+                </span>
+              )}
+            </button>
+          </div>
+        </header>
+
+        {/* Horizontal Category Cards */}
+        <div className="px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-none shrink-0">
+          {/* Card: All */}
+          <button
+            type="button"
+            onClick={() => setSelectedCategory('all')}
+            className={`min-w-[110px] p-3 rounded-2xl border transition-all text-left flex flex-col justify-between shadow-sm shrink-0 ${
+              selectedCategory === 'all'
+                ? 'bg-[#D1F0DC] border-[#BDE8CB] text-[#119C49]'
+                : 'bg-white border-[#EBECEF] text-[#1A1D1F] hover:border-[#119C49]/40'
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-2 ${
+              selectedCategory === 'all' ? 'bg-[#119C49] text-white' : 'bg-[#F4F5F7] text-[#7C828D]'
+            }`}>
+              <Layers className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold leading-tight">All</p>
+              <p className={`text-[10px] ${selectedCategory === 'all' ? 'text-[#119C49]' : 'text-[#7C828D]'}`}>
+                {items.length} Items
+              </p>
+            </div>
+          </button>
+
+          {/* Category Cards from DB */}
+          {categories.map((cat) => {
+            const Icon = getCategoryIcon(cat.name);
+            const isSelected = selectedCategory === cat.id;
+            const categoryItemCount = items.filter((i) => i.category_id === cat.id).length;
 
             return (
               <button
-                key={item.id}
+                key={cat.id}
                 type="button"
-                disabled={!item.is_available}
-                onClick={() => handleItemClick(item)}
-                className={`relative p-3.5 rounded-2xl border text-left transition flex flex-col justify-between h-36 ${
-                  item.is_available
-                    ? 'bg-zinc-900/90 border-zinc-800 hover:border-amber-500/50 hover:bg-zinc-850 active:scale-[0.98]'
-                    : 'bg-zinc-950/80 border-rose-500/20 opacity-60 cursor-not-allowed'
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`min-w-[115px] p-3 rounded-2xl border transition-all text-left flex flex-col justify-between shadow-sm shrink-0 ${
+                  isSelected
+                    ? 'bg-[#D1F0DC] border-[#BDE8CB] text-[#119C49]'
+                    : 'bg-white border-[#EBECEF] text-[#1A1D1F] hover:border-[#119C49]/40'
                 }`}
               >
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-2 ${
+                  isSelected ? 'bg-[#119C49] text-white' : 'bg-[#F4F5F7] text-[#7C828D]'
+                }`}>
+                  <Icon className="w-4 h-4" />
+                </div>
                 <div>
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 uppercase">
-                      {item.station?.code || 'HOT'}
-                    </span>
-                    {hasVariants && (
-                      <span className="text-[10px] text-amber-400 font-semibold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                        Sizes
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="font-bold text-sm text-white line-clamp-2 leading-tight">
-                    {item.name}
-                  </h4>
+                  <p className="text-xs font-bold leading-tight truncate">{cat.name}</p>
+                  <p className={`text-[10px] ${isSelected ? 'text-[#119C49]' : 'text-[#7C828D]'}`}>
+                    {categoryItemCount} Items
+                  </p>
                 </div>
-
-                <div className="flex items-end justify-between pt-2">
-                  <span className="text-sm font-black text-amber-400 font-mono">
-                    {formatLKR(item.base_price)}
-                  </span>
-                  <div className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center">
-                    <Plus className="w-4 h-4" />
-                  </div>
-                </div>
-
-                {/* 86 Unavailable Badge */}
-                {!item.is_available && (
-                  <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center backdrop-blur-[1px]">
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-rose-600 text-white tracking-wider">
-                      86 Out of Stock
-                    </span>
-                  </div>
-                )}
               </button>
             );
           })}
         </div>
+
+        {/* 3-Column Product Grid (Scrollable) */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 pb-24 scrollbar-none">
+          {errorMessage && (
+            <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {filteredItems.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center p-6 bg-white rounded-3xl border border-[#EBECEF]">
+              <UtensilsCrossed className="w-10 h-10 text-[#7C828D]/50 mb-2" />
+              <p className="text-sm font-bold text-[#1A1D1F]">No Menu Items Found</p>
+              <p className="text-xs text-[#7C828D]">Try selecting another category or searching differently.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredItems.map((item, idx) => {
+                const cartQty = getItemCartQuantity(item.id);
+                const isInCart = cartQty > 0;
+                const isVeg = item.name.toLowerCase().includes('salad') || item.name.toLowerCase().includes('veg') || item.name.toLowerCase().includes('latte') || item.name.toLowerCase().includes('coffee') || item.name.toLowerCase().includes('cake');
+                const hasDiscount = idx % 3 === 0; // decorative 20% off badge on select items matching mockup
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`rounded-2xl p-3 bg-white border transition-all duration-200 shadow-sm flex flex-col justify-between relative group ${
+                      isInCart
+                        ? 'border-2 border-[#119C49] shadow-md shadow-[#119C49]/10'
+                        : 'border-[#EBECEF] hover:border-[#119C49]/40 hover:shadow-md'
+                    }`}
+                  >
+                    {/* Top Dish Image + Optional Discount Badge */}
+                    <div className="relative w-full h-36 rounded-xl overflow-hidden bg-[#F4F5F7] mb-3">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-[#7C828D] bg-gradient-to-br from-[#F8F9FA] to-[#EDF0F3]">
+                          <UtensilsCrossed className="w-8 h-8 mb-1 text-[#119C49]/40" />
+                          <span className="text-[10px] font-bold text-[#7C828D]">Freshly Prepared</span>
+                        </div>
+                      )}
+
+                      {/* 20% Off Badge */}
+                      {hasDiscount && (
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F59E0B] text-white shadow-sm">
+                          20% Off
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Dish Title & Price Row */}
+                    <div className="mb-3">
+                      <h4 className="text-xs font-bold text-[#1A1D1F] line-clamp-2 leading-snug min-h-[32px]">
+                        {item.name}
+                      </h4>
+
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-sm font-black text-[#119C49] font-mono">
+                          {formatLKR(Number(item.base_price))}
+                        </span>
+
+                        {/* Veg / Non-Veg Indicator */}
+                        {isVeg ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#119C49] bg-[#D1F0DC] px-2 py-0.5 rounded-full">
+                            <Leaf className="w-3 h-3" />
+                            <span>Veg</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                            <Beef className="w-3 h-3" />
+                            <span>Non Veg</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Action Button: 'Add to Dish' or Circular Steppers */}
+                    <div>
+                      {isInCart ? (
+                        <div className="flex items-center justify-between bg-[#F8F9FA] p-1 rounded-xl border border-[#EBECEF]">
+                          <button
+                            type="button"
+                            onClick={() => handleDecrement(item.id)}
+                            className="w-8 h-8 rounded-full bg-[#119C49] text-white flex items-center justify-center font-bold hover:bg-[#0E853E] transition shadow-sm"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="font-extrabold text-sm text-[#1A1D1F] font-mono">
+                            {cartQty}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleQuickAdd(item)}
+                            className="w-8 h-8 rounded-full bg-[#119C49] text-white flex items-center justify-center font-bold hover:bg-[#0E853E] transition shadow-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={() => handleQuickAdd(item)}
+                          className="w-full h-10 bg-[#D8F3E2] hover:bg-[#C6ECD4] text-[#119C49] font-bold text-xs rounded-xl transition shadow-none border-none"
+                        >
+                          Add to Dish
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Pinned Live Kitchen Orders Strip */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-[#EBECEF] px-4 flex items-center gap-3 overflow-x-auto scrollbar-none shadow-lg z-20">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C828D] whitespace-nowrap shrink-0">
+            Live Kitchen:
+          </span>
+
+          {liveOrders.length === 0 ? (
+            <span className="text-xs text-[#7C828D]">No pending orders in kitchen prep.</span>
+          ) : (
+            liveOrders.map((ord) => (
+              <div
+                key={ord.id}
+                className="px-3.5 py-1.5 rounded-full bg-white border border-[#EBECEF] shadow-sm flex items-center gap-2.5 shrink-0"
+              >
+                {/* Circular Amber Table Badge */}
+                <div className="w-7 h-7 rounded-full bg-[#F59E0B] text-white font-extrabold text-[11px] flex items-center justify-center shrink-0">
+                  {ord.table_number || 'T1'}
+                </div>
+
+                <div className="text-left leading-tight">
+                  <p className="text-xs font-bold text-[#1A1D1F] truncate max-w-[120px]">
+                    {ord.customer_name || ord.order_number}
+                  </p>
+                  <p className="text-[10px] text-[#7C828D]">
+                    {ord.items_count} items &rarr; Kitchen
+                  </p>
+                </div>
+
+                {/* Status Pill */}
+                <span
+                  className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                    ord.kds_status === 'ready'
+                      ? 'bg-[#D1F0DC] text-[#119C49]'
+                      : 'bg-[#FEF3E2] text-[#F59E0B]'
+                  }`}
+                >
+                  {ord.kds_status === 'ready' ? 'Ready' : 'Process'}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      {/* ==================================================================== */}
-      {/* RIGHT PANEL: POS Order Cart & Summary */}
-      {/* ==================================================================== */}
-      <div className="w-full lg:w-[420px] flex flex-col bg-zinc-900/95 border-l border-zinc-800 shrink-0 overflow-hidden">
-        {/* Order Type Header */}
-        <div className="p-3 border-b border-zinc-800 bg-zinc-900">
-          <div className="grid grid-cols-3 gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800 mb-2.5">
+      {/* ========================================================================= */}
+      {/* RIGHT ORDER CART & PAYMENT PANEL (w-[380px] bg-white)                     */}
+      {/* ========================================================================= */}
+      <aside className="w-[380px] bg-white border-l border-[#EBECEF] flex flex-col justify-between h-full shrink-0 shadow-lg z-20">
+        {/* Top Header: Table info + Staff Subtitle */}
+        <div className="p-4 border-b border-[#F4F5F7] flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-extrabold text-[#1A1D1F] tracking-tight">
+              {orderType === 'dine_in'
+                ? tableNumber
+                  ? `Table ${tableNumber}`
+                  : 'Select Table'
+                : orderType === 'takeaway'
+                ? 'Take Away'
+                : 'Delivery'}
+            </h3>
+            <p className="text-xs text-[#7C828D]">
+              {currentUser?.display_name || 'Staff Member'}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (orderType === 'dine_in') setIsTablePickerOpen(true);
+            }}
+            className="w-9 h-9 rounded-full bg-[#F4F5F7] text-[#7C828D] hover:text-[#1A1D1F] flex items-center justify-center transition"
+            title="Edit Table / Details"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Segmented Switcher: Dine In, Take Away, Delivery */}
+        <div className="px-4 py-2">
+          <div className="bg-[#F4F5F7] p-1 rounded-full flex items-center gap-1">
             <button
               type="button"
               onClick={() => setOrderType('dine_in')}
-              className={`py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 rounded-full text-xs font-bold transition text-center ${
                 orderType === 'dine_in'
-                  ? 'bg-amber-500 text-zinc-950 shadow'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-[#D1F0DC] text-[#119C49] shadow-sm'
+                  : 'text-[#7C828D] hover:text-[#1A1D1F]'
               }`}
             >
-              <Utensils className="w-3.5 h-3.5" />
-              <span>Dine-In</span>
+              Dine in
             </button>
             <button
               type="button"
               onClick={() => setOrderType('takeaway')}
-              className={`py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 rounded-full text-xs font-bold transition text-center ${
                 orderType === 'takeaway'
-                  ? 'bg-amber-500 text-zinc-950 shadow'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-[#D1F0DC] text-[#119C49] shadow-sm'
+                  : 'text-[#7C828D] hover:text-[#1A1D1F]'
               }`}
             >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Takeaway</span>
+              Take Away
             </button>
             <button
               type="button"
               onClick={() => setOrderType('delivery')}
-              className={`py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 rounded-full text-xs font-bold transition text-center ${
                 orderType === 'delivery'
-                  ? 'bg-amber-500 text-zinc-950 shadow'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-[#D1F0DC] text-[#119C49] shadow-sm'
+                  : 'text-[#7C828D] hover:text-[#1A1D1F]'
               }`}
             >
-              <Bike className="w-3.5 h-3.5" />
-              <span>Delivery</span>
+              Delivery
+            </button>
+          </div>
+        </div>
+
+        {/* Cart Items List */}
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2.5 scrollbar-none">
+          {cartItems.length === 0 ? (
+            <div className="h-44 flex flex-col items-center justify-center text-center p-4 text-[#7C828D]">
+              <ShoppingBag className="w-10 h-10 mb-2 opacity-30 text-[#119C49]" />
+              <p className="text-xs font-bold text-[#1A1D1F]">Your Cart is Empty</p>
+              <p className="text-[11px] text-[#7C828D]">Tap &quot;Add to Dish&quot; on any product to ring an order.</p>
+            </div>
+          ) : (
+            cartItems.map((cItem) => (
+              <div
+                key={cItem.cart_item_id}
+                className="bg-[#F8F9FA] rounded-2xl p-3 border border-[#EBECEF] flex items-center justify-between gap-3 shadow-none hover:border-[#119C49]/40 transition"
+              >
+                {/* Details */}
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-[#EBECEF] flex items-center justify-center font-bold text-[#119C49] text-xs shrink-0 font-mono">
+                    {cItem.quantity}x
+                  </div>
+                  <div className="overflow-hidden leading-tight">
+                    <p className="text-xs font-bold text-[#1A1D1F] truncate">{cItem.item_name}</p>
+                    <p className="text-[10px] text-[#7C828D] font-mono mt-0.5">
+                      {formatLKR(cItem.unit_price)} &bull; {cItem.quantity}X
+                    </p>
+                  </div>
+                </div>
+
+                {/* Subtotal & Remove */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-[#119C49] font-mono whitespace-nowrap">
+                    {formatLKR(cItem.unit_price * cItem.quantity)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(cItem.cart_item_id)}
+                    className="w-6 h-6 rounded-full hover:bg-rose-50 text-[#7C828D] hover:text-rose-600 flex items-center justify-center transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Bottom Cart Financials & Payment Submission */}
+        <div className="p-4 border-t border-[#F4F5F7] space-y-3 bg-[#FCFCFD]">
+          {/* Financial Breakdown */}
+          <div className="space-y-1.5 text-xs">
+            <div className="flex items-center justify-between text-[#7C828D]">
+              <span>Sub Total</span>
+              <span className="font-bold text-[#1A1D1F] font-mono">{formatLKR(subtotal)}</span>
+            </div>
+            {orderType === 'dine_in' && (
+              <div className="flex items-center justify-between text-[#7C828D]">
+                <span>Service Charge (10%)</span>
+                <span className="font-bold text-[#1A1D1F] font-mono">{formatLKR(serviceCharge)}</span>
+              </div>
+            )}
+            <div className="pt-2 border-t border-[#EBECEF] flex items-center justify-between text-sm font-extrabold text-[#1A1D1F]">
+              <span>Total Amount</span>
+              <span className="text-base text-[#119C49] font-mono">{formatLKR(total)}</span>
+            </div>
+          </div>
+
+          {/* 3 Payment Method Tiles: Cash, Credit Card, QR Code */}
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setSelectedPaymentMethod('cash')}
+              className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition text-xs font-bold ${
+                selectedPaymentMethod === 'cash'
+                  ? 'bg-[#D1F0DC] border-[#119C49] text-[#119C49] shadow-sm'
+                  : 'bg-white border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F]'
+              }`}
+            >
+              <Wallet className="w-4 h-4" />
+              <span>Cash</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedPaymentMethod('credit_card')}
+              className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition text-xs font-bold ${
+                selectedPaymentMethod === 'credit_card'
+                  ? 'bg-[#D1F0DC] border-[#119C49] text-[#119C49] shadow-sm'
+                  : 'bg-white border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F]'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span className="text-[10px]">Card</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedPaymentMethod('qr_payment')}
+              className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition text-xs font-bold ${
+                selectedPaymentMethod === 'qr_payment'
+                  ? 'bg-[#D1F0DC] border-[#119C49] text-[#119C49] shadow-sm'
+                  : 'bg-white border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F]'
+              }`}
+            >
+              <QrCode className="w-4 h-4" />
+              <span className="text-[10px]">QR Code</span>
             </button>
           </div>
 
-          {/* Context Details (Table / Customer) */}
-          {orderType === 'dine_in' && (
-            <div className="flex items-center justify-between p-2 rounded-xl bg-zinc-950/60 border border-zinc-800">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs text-zinc-400">Assigned Table:</span>
-                <span className="text-sm font-black text-white">
-                  {tableNumber ? `Table ${tableNumber}` : 'None Selected'}
-                </span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsTablePickerOpen(true)}
-                className="h-7 text-xs bg-zinc-900 border-zinc-700 text-amber-400 hover:text-white"
-              >
-                {tableNumber ? 'Change' : 'Pick Table'}
-              </Button>
-            </div>
-          )}
-
-          {orderType === 'takeaway' && (
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                placeholder="Customer Name"
-                value={customerName}
-                onChange={(e) => setCustomer(e.target.value, customerPhone)}
-                className="h-8 bg-zinc-950 border-zinc-800 text-white text-xs"
-              />
-              <Input
-                placeholder="Phone (Optional)"
-                value={customerPhone}
-                onChange={(e) => setCustomer(customerName, e.target.value)}
-                className="h-8 bg-zinc-950 border-zinc-800 text-white text-xs font-mono"
-              />
-            </div>
-          )}
-
-          {orderType === 'delivery' && (
-            <div className="space-y-1.5">
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  placeholder="Customer Name"
-                  value={customerName}
-                  onChange={(e) => setCustomer(e.target.value, customerPhone, deliveryAddress)}
-                  className="h-8 bg-zinc-950 border-zinc-800 text-white text-xs"
-                />
-                <Input
-                  placeholder="Phone Number"
-                  value={customerPhone}
-                  onChange={(e) => setCustomer(customerName, e.target.value, deliveryAddress)}
-                  className="h-8 bg-zinc-950 border-zinc-800 text-white text-xs font-mono"
-                />
-              </div>
-              <Input
-                placeholder="Delivery Address"
-                value={deliveryAddress}
-                onChange={(e) => setCustomer(customerName, customerPhone, e.target.value)}
-                className="h-8 bg-zinc-950 border-zinc-800 text-white text-xs"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Cart Item List */}
-        <div className="flex-1 p-3 overflow-y-auto space-y-2">
-          {cartItems.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-zinc-500">
-              <ShoppingBag className="w-10 h-10 mb-2 opacity-30" />
-              <p className="text-sm font-semibold text-zinc-400">Your cart is empty</p>
-              <p className="text-xs text-zinc-500 mt-0.5">Tap menu items to ring up an order.</p>
-            </div>
-          ) : (
-            cartItems.map((item) => {
-              const itemTotal =
-                (item.unit_price + (item.modifiers || []).reduce((s, m) => s + m.unit_price, 0)) *
-                item.quantity;
-
-              return (
-                <div
-                  key={item.cart_item_id}
-                  className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col gap-1.5"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <span className="font-bold text-xs text-white leading-tight block">
-                        {item.item_name}
-                      </span>
-                      {item.variant_name && (
-                        <span className="text-[10px] text-amber-400/90 font-mono">
-                          {item.variant_name}
-                        </span>
-                      )}
-                      {item.modifiers && item.modifiers.length > 0 && (
-                        <div className="text-[10px] text-zinc-400">
-                          {item.modifiers.map((m) => m.modifier_name).join(', ')}
-                        </div>
-                      )}
-                      {item.notes && (
-                        <p className="text-[10px] text-zinc-500 italic mt-0.5">&ldquo;{item.notes}&rdquo;</p>
-                      )}
-                    </div>
-
-                    <span className="font-mono font-bold text-xs text-amber-400 whitespace-nowrap">
-                      {formatLKR(itemTotal)}
-                    </span>
-                  </div>
-
-                  {/* Quantity Stepper & Remove */}
-                  <div className="flex items-center justify-between pt-1 border-t border-zinc-900">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateItemQuantity(item.cart_item_id, -1)}
-                        className="w-6 h-6 p-0 bg-zinc-900 border-zinc-800 text-zinc-300 font-bold text-xs"
-                      >
-                        -
-                      </Button>
-                      <span className="font-mono font-bold text-xs text-white min-w-4 text-center">
-                        {item.quantity}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateItemQuantity(item.cart_item_id, 1)}
-                        className="w-6 h-6 p-0 bg-zinc-900 border-zinc-800 text-zinc-300 font-bold text-xs"
-                      >
-                        +
-                      </Button>
-                    </div>
-
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeItem(item.cart_item_id)}
-                      className="h-6 w-6 p-0 text-zinc-500 hover:text-rose-400"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Pricing Summary & Send to Kitchen */}
-        <div className="p-3.5 bg-zinc-950 border-t border-zinc-800 space-y-3 shrink-0">
-          {orderError && (
-            <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{orderError}</span>
-            </div>
-          )}
-
-          {/* Totals Breakdown */}
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between text-zinc-400">
-              <span>Subtotal:</span>
-              <span className="text-white font-mono">{formatLKR(subtotal)}</span>
-            </div>
-            {orderType === 'dine_in' && (
-              <div className="flex justify-between text-zinc-400">
-                <span>Service Charge (10%):</span>
-                <span className="text-white font-mono">{formatLKR(serviceCharge)}</span>
-              </div>
-            )}
-            {orderType === 'delivery' && (
-              <div className="flex justify-between text-zinc-400">
-                <span>Delivery Fee:</span>
-                <span className="text-white font-mono">{formatLKR(deliveryFee)}</span>
-              </div>
-            )}
-            {discountAmount > 0 && (
-              <div className="flex justify-between text-emerald-400">
-                <span>Discount Applied:</span>
-                <span className="font-mono">-{formatLKR(discountAmount)}</span>
-              </div>
-            )}
-            <div className="border-t border-zinc-800 pt-1.5 flex justify-between items-center">
-              <span className="font-bold text-sm text-white">Final Total:</span>
-              <span className="font-black text-xl text-amber-400 font-mono">
-                {formatLKR(total)}
-              </span>
-            </div>
-          </div>
-
-          {/* Hold & Actions Toolbar */}
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={cartItems.length === 0}
-              onClick={() => {
-                const held = holdCurrentOrder();
-                if (held) {
-                  // success hold
-                }
-              }}
-              className="flex-1 bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white text-xs gap-1.5 h-9"
-            >
-              <PauseCircle className="w-3.5 h-3.5 text-amber-400" />
-              <span>Hold Order</span>
-            </Button>
-
-            {heldOrders.length > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsHoldOrdersOpen(true)}
-                className="bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold h-9 gap-1"
-              >
-                <span>Held ({heldOrders.length})</span>
-              </Button>
-            )}
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={cartItems.length === 0}
-              onClick={clearCart}
-              className="text-zinc-500 hover:text-rose-400 h-9 px-2.5 text-xs"
-            >
-              Clear
-            </Button>
-          </div>
-
-          {/* Send to Kitchen Button */}
+          {/* Place Order Primary Action Button */}
           <Button
-            size="lg"
-            disabled={cartItems.length === 0 || isSubmittingOrder}
-            onClick={handleSendToKitchen}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold h-13 rounded-xl gap-2 shadow-lg shadow-emerald-600/20 text-base"
+            type="button"
+            disabled={cartItems.length === 0 || isSubmitting}
+            onClick={handlePlaceOrder}
+            className="w-full h-14 bg-[#119C49] hover:bg-[#0E853E] text-white font-extrabold text-base rounded-2xl shadow-lg shadow-[#119C49]/25 transition"
           >
-            <Send className="w-5 h-5" />
-            <span>{isSubmittingOrder ? 'Routing to Stations...' : `Send to Kitchen (${formatLKR(total)})`}</span>
+            {isSubmitting ? 'Placing Order...' : 'Place Order'}
           </Button>
         </div>
-      </div>
+      </aside>
 
-      {/* Global Modals */}
+      {/* ========================================================================= */}
+      {/* GLOBAL MODALS */}
       <ItemCustomizerModal
         isOpen={isCustomizerOpen}
         onOpenChange={setIsCustomizerOpen}
         item={selectedItemForCustomizer}
-        onAddToCart={addItem}
+        onAddToCart={(configuredItem) => {
+          addItem(configuredItem);
+          setIsCustomizerOpen(false);
+        }}
       />
 
       <TablePickerModal
         isOpen={isTablePickerOpen}
         onOpenChange={setIsTablePickerOpen}
         selectedTableId={tableId}
-        onSelectTable={(id, num) => setTable(id, num)}
+        onSelectTable={(selectedId, selectedNumber) => {
+          setTable(selectedId, selectedNumber);
+          setIsTablePickerOpen(false);
+        }}
       />
 
       <HoldOrdersModal
@@ -673,13 +840,20 @@ export default function PosBillingPage() {
         onOpenChange={setIsHoldOrdersOpen}
       />
 
-      <OrderSuccessDialog
-        isOpen={isSuccessModalOpen}
-        onOpenChange={setIsSuccessModalOpen}
-        orderNumber={submittedOrderNumber}
-        totalAmount={submittedTotalAmount}
-        stationsRouted={submittedStationsRouted}
+      <PaymentSuccessModal
+        isOpen={isPaymentSuccessOpen}
+        onClose={() => setIsPaymentSuccessOpen(false)}
+        orderNumber={successDetails.orderNumber}
+        orderId={successDetails.orderId}
+        totalAmount={successDetails.totalAmount}
+        paymentMethod={successDetails.paymentMethod}
+        paymentTime={successDetails.paymentTime}
+        subtotal={successDetails.subtotal}
+        serviceCharge={successDetails.serviceCharge}
+        tableNumber={successDetails.tableNumber}
+        items={successDetails.items}
         onNewOrder={() => {
+          setIsPaymentSuccessOpen(false);
           clearCart();
         }}
       />

@@ -12,7 +12,6 @@ import {
   IceCream,
   Utensils,
   Layers,
-  Radio,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
@@ -20,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
 import { useKdsRealtime } from '@/hooks/use-kds-realtime';
 import { TicketCard } from '@/components/kds/ticket-card';
-import { StationCode } from '@/types/kds.types';
 
 export default function KdsPage() {
   const { currentUser } = useAuthStore();
@@ -49,7 +47,6 @@ export default function KdsPage() {
     { code: 'DESSERT', label: 'Dessert Station', icon: IceCream },
   ];
 
-  // Count active tickets per station
   const stationCounts: Record<string, number> = {
     ALL: tickets.length,
     HOT: tickets.filter((t) => t.station_code === 'HOT').length,
@@ -70,48 +67,40 @@ export default function KdsPage() {
     updateTicket(ticketId, 'recall', currentUser?.id);
   };
 
-  // Filter tickets by selected station tab
   const displayedTickets =
     activeStation === 'ALL'
       ? tickets
       : tickets.filter((t) => t.station_code.toUpperCase() === activeStation.toUpperCase());
 
   return (
-    <div className="flex-1 flex flex-col bg-zinc-950 text-white min-h-[calc(100vh-4rem)]">
-      {/* KDS Sticky Header */}
-      <header className="sticky top-16 z-30 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800 px-4 sm:px-6 py-3">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-          {/* Left: Title + Realtime Status + Mode Switcher */}
+    <div className="flex-1 flex flex-col bg-[#F6F7F9] text-[#1A1D1F] h-full overflow-hidden">
+      {/* KDS Header */}
+      <header className="bg-white border-b border-[#EBECEF] px-6 py-4 shrink-0 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Title + Station Info */}
           <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 flex items-center justify-center font-bold">
-                <ChefHat className="w-6 h-6" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#FEF3E2] border border-[#FDE3B8] text-[#F59E0B] flex items-center justify-center font-bold">
+                <ChefHat className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-base font-extrabold tracking-tight text-white leading-tight">
+                <h1 className="text-base font-extrabold tracking-tight text-[#1A1D1F] leading-tight">
                   Kitchen Display System
                 </h1>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[11px] text-zinc-400">
-                    Station KDS &bull; {currentUser?.display_name || 'Chef Display'}
+                  <span className="text-xs text-[#7C828D]">
+                    {currentUser?.display_name || 'Chef Station'}
                   </span>
-                  {/* Realtime Live Pulse Badge */}
                   <div
-                    className={`inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-mono font-semibold border ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
                       connectionStatus === 'connected'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        : connectionStatus === 'connecting'
-                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse'
-                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                        ? 'bg-[#D1F0DC] text-[#119C49] border-[#BDE8CB]'
+                        : 'bg-[#FEF3E2] text-[#F59E0B] border-[#FDE3B8]'
                     }`}
                   >
                     <span
                       className={`w-1.5 h-1.5 rounded-full ${
-                        connectionStatus === 'connected'
-                          ? 'bg-emerald-400 animate-pulse'
-                          : connectionStatus === 'connecting'
-                          ? 'bg-amber-400'
-                          : 'bg-rose-400'
+                        connectionStatus === 'connected' ? 'bg-[#119C49] animate-pulse' : 'bg-[#F59E0B]'
                       }`}
                     />
                     <span>{connectionStatus === 'connected' ? 'LIVE' : connectionStatus.toUpperCase()}</span>
@@ -120,15 +109,15 @@ export default function KdsPage() {
               </div>
             </div>
 
-            {/* View Mode: Active vs Recall */}
-            <div className="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+            {/* View Switcher: Active vs Recall */}
+            <div className="flex items-center bg-[#F6F7F9] p-1 rounded-full border border-[#EBECEF]">
               <button
                 type="button"
                 onClick={() => setActiveView('active')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
                   activeView === 'active'
-                    ? 'bg-orange-500 text-zinc-950 shadow-md'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-[#119C49] text-white shadow-sm'
+                    : 'text-[#7C828D] hover:text-[#1A1D1F]'
                 }`}
               >
                 Active ({tickets.length})
@@ -136,10 +125,10 @@ export default function KdsPage() {
               <button
                 type="button"
                 onClick={() => setActiveView('recall')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-bold transition ${
                   activeView === 'recall'
-                    ? 'bg-zinc-800 text-white shadow-md'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-[#119C49] text-white shadow-sm'
+                    : 'text-[#7C828D] hover:text-[#1A1D1F]'
                 }`}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -148,42 +137,39 @@ export default function KdsPage() {
             </div>
           </div>
 
-          {/* Right: Audio Chime Toggle + Manual Refresh */}
+          {/* Right Controls: Audio + Refresh */}
           <div className="flex items-center gap-2 self-end md:self-auto">
-            {/* Audio Toggle Button */}
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={toggleMute}
-              title={isMuted ? 'Unmute WebAudio Alert' : 'Mute WebAudio Alert'}
-              className={`h-9 px-3 text-xs font-bold gap-1.5 border transition ${
+              className={`h-10 px-4 text-xs font-bold rounded-full gap-1.5 border transition ${
                 isMuted
-                  ? 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'
-                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                  ? 'bg-white border-[#EBECEF] text-[#7C828D]'
+                  : 'bg-[#D1F0DC] border-[#BDE8CB] text-[#119C49]'
               }`}
             >
               {isMuted ? (
                 <>
-                  <VolumeX className="w-4 h-4 text-zinc-500" />
+                  <VolumeX className="w-4 h-4 text-[#7C828D]" />
                   <span>Muted</span>
                 </>
               ) : (
                 <>
-                  <Volume2 className="w-4 h-4 text-emerald-400" />
+                  <Volume2 className="w-4 h-4 text-[#119C49]" />
                   <span>Audio ON</span>
                 </>
               )}
             </Button>
 
-            {/* Manual Sync Refetch */}
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => refetch()}
               disabled={isLoading}
-              className="h-9 px-3 bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 text-xs font-semibold gap-1.5"
+              className="h-10 px-4 bg-white border-[#EBECEF] text-[#1A1D1F] hover:bg-[#F6F7F9] text-xs font-bold rounded-full gap-1.5"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
@@ -192,7 +178,7 @@ export default function KdsPage() {
         </div>
 
         {/* Station Filter Tabs */}
-        <div className="max-w-7xl mx-auto mt-3 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {stations.map((stn) => {
             const Icon = stn.icon;
             const count = stationCounts[stn.code] || 0;
@@ -203,17 +189,17 @@ export default function KdsPage() {
                 key={stn.code}
                 type="button"
                 onClick={() => setActiveStation(stn.code)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition border ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition border ${
                   isSelected
-                    ? 'bg-orange-500/15 border-orange-500/40 text-orange-400 shadow-sm'
-                    : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    ? 'bg-[#D1F0DC] border-[#BDE8CB] text-[#119C49] shadow-sm'
+                    : 'bg-white border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F]'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{stn.label}</span>
                 <span
-                  className={`ml-1 px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold ${
-                    isSelected ? 'bg-orange-500 text-zinc-950' : 'bg-zinc-800 text-zinc-300'
+                  className={`ml-1 px-2 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                    isSelected ? 'bg-[#119C49] text-white' : 'bg-[#F4F5F7] text-[#7C828D]'
                   }`}
                 >
                   {count}
@@ -224,29 +210,27 @@ export default function KdsPage() {
         </div>
       </header>
 
-      {/* Main Ticket Grid Content */}
-      <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1">
+      {/* Main KDS Grid Canvas */}
+      <main className="p-6 flex-1 overflow-y-auto scrollbar-none">
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {displayedTickets.length === 0 ? (
-          <div className="h-96 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-zinc-900/30 border border-dashed border-zinc-800">
-            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-500 flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500/60" />
+          <div className="h-80 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-white border border-[#EBECEF] shadow-sm">
+            <div className="w-16 h-16 rounded-full bg-[#D1F0DC] text-[#119C49] flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-1">
+            <h3 className="text-base font-extrabold text-[#1A1D1F] mb-1">
               {activeView === 'recall' ? 'No Recalled Tickets' : 'Kitchen All Caught Up!'}
             </h3>
-            <p className="text-sm text-zinc-400 max-w-sm">
+            <p className="text-xs text-[#7C828D] max-w-sm">
               {activeView === 'recall'
-                ? 'No recently completed tickets found in the last 2 hours to recall.'
-                : `There are currently no pending tickets routed to ${
-                    activeStation === 'ALL' ? 'any station' : activeStation
-                  }. New orders will appear here automatically.`}
+                ? 'No tickets completed in the last 2 hours to recall.'
+                : 'No pending orders at this station. New tickets will arrive and alert in real time.'}
             </p>
           </div>
         ) : (

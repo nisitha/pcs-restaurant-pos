@@ -16,10 +16,10 @@ import {
   XCircle,
   RefreshCw,
   ChefHat,
-  Database,
   Flame,
   Coffee,
   IceCream,
+  Settings,
 } from 'lucide-react';
 
 export default function MenuManagementPage() {
@@ -31,7 +31,6 @@ export default function MenuManagementPage() {
     cachedVersion,
     fetchMenu,
     toggleAvailability,
-    updateCachedItem,
     isLoading,
   } = useMenuStore();
 
@@ -61,28 +60,33 @@ export default function MenuManagementPage() {
     setIsToggling(null);
   };
 
-  const stationBadges: Record<string, string> = {
-    HOT: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-    GRILL: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-    BEV: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    DESSERT: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  const getStationBadge = (stationId?: string | null) => {
+    const stn = stations.find((s) => s.id === stationId);
+    if (!stn) return null;
+
+    let color = 'bg-[#F4F5F7] text-[#7C828D]';
+    if (stn.code === 'HOT') color = 'bg-orange-50 text-orange-600 border border-orange-200';
+    if (stn.code === 'GRILL') color = 'bg-red-50 text-red-600 border border-red-200';
+    if (stn.code === 'BEV') color = 'bg-cyan-50 text-cyan-700 border border-cyan-200';
+    if (stn.code === 'DESSERT') color = 'bg-pink-50 text-pink-600 border border-pink-200';
+
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${color}`}>
+        {stn.name}
+      </span>
+    );
   };
 
   return (
-    <div className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
+    <div className="flex-1 p-6 sm:p-8 max-w-7xl mx-auto w-full overflow-y-auto scrollbar-none">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800 pb-6 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#EBECEF] pb-6 mb-8">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2.5">
-              <Utensils className="w-7 h-7 text-amber-500" /> Menu & Category Management
-            </h1>
-            <Badge variant="outline" className="text-[11px] bg-zinc-900 border-zinc-800 text-zinc-400">
-              v{cachedVersion}
-            </Badge>
-          </div>
-          <p className="text-sm text-zinc-400">
-            Client-cached catalog with instant 86-ing ("Unavailable") and station routing.
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1D1F] flex items-center gap-2.5">
+            <Settings className="w-7 h-7 text-[#119C49]" /> Menu Settings & Catalog
+          </h1>
+          <p className="text-xs text-[#7C828D] mt-1">
+            Configure dish prices in LKR, kitchen station assignments, and toggle item availability.
           </p>
         </div>
 
@@ -92,195 +96,137 @@ export default function MenuManagementPage() {
             size="sm"
             onClick={() => fetchMenu(true)}
             disabled={isLoading}
-            className="bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white text-xs gap-1.5"
+            className="bg-white border-[#EBECEF] text-[#1A1D1F] hover:bg-[#F6F7F9] text-xs font-bold rounded-full gap-1.5"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Force Sync</span>
+            <span>Sync</span>
           </Button>
 
           <Button
             onClick={() => setIsAddItemModalOpen(true)}
-            className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs gap-1.5"
+            className="bg-[#119C49] hover:bg-[#0E853E] text-white font-bold text-xs rounded-full gap-1.5 shadow-md shadow-[#119C49]/20"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Menu Item</span>
+            <span>Add New Dish</span>
           </Button>
         </div>
       </div>
 
-      {/* Metric Counters */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-          <span className="text-xs text-zinc-400 block mb-1">Total Dishes & Drinks</span>
-          <p className="text-2xl font-bold text-white">{items.length}</p>
+      {/* Counters & Version */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white border border-[#EBECEF] rounded-3xl p-5 shadow-sm">
+          <p className="text-xs text-[#7C828D]">Available Dishes</p>
+          <p className="text-2xl font-black text-[#119C49] font-mono mt-1">{availableCount}</p>
         </div>
-        <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-          <span className="text-xs text-zinc-400 block mb-1">In Stock (Active)</span>
-          <p className="text-2xl font-bold text-emerald-400">{availableCount}</p>
+        <div className="bg-white border border-[#EBECEF] rounded-3xl p-5 shadow-sm">
+          <p className="text-xs text-[#7C828D]">86 Unavailable Dishes</p>
+          <p className="text-2xl font-black text-rose-500 font-mono mt-1">{unavailableCount}</p>
         </div>
-        <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-          <span className="text-xs text-zinc-400 block mb-1">86 Unavailable</span>
-          <p className="text-2xl font-bold text-rose-400">{unavailableCount}</p>
-        </div>
-        <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-          <span className="text-xs text-zinc-400 block mb-1">Kitchen Stations</span>
-          <p className="text-2xl font-bold text-blue-400">{stations.length} Active</p>
+        <div className="bg-white border border-[#EBECEF] rounded-3xl p-5 shadow-sm">
+          <p className="text-xs text-[#7C828D]">Cache Version</p>
+          <p className="text-2xl font-black text-[#1A1D1F] font-mono mt-1">v{cachedVersion}</p>
         </div>
       </div>
 
-      {/* Controls: Search + Categories */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedCategoryId('all')}
-            className={`text-xs rounded-lg ${
-              selectedCategoryId === 'all'
-                ? 'bg-amber-500 text-zinc-950 font-bold'
-                : 'bg-zinc-900 text-zinc-400 hover:text-white'
-            }`}
-          >
-            All Items ({items.length})
-          </Button>
-          {categories.map((c) => (
-            <Button
-              key={c.id}
-              size="sm"
-              variant="ghost"
-              onClick={() => setSelectedCategoryId(c.id)}
-              className={`text-xs rounded-lg whitespace-nowrap ${
-                selectedCategoryId === c.id
-                  ? 'bg-amber-500 text-zinc-950 font-bold'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white'
-              }`}
-            >
-              {c.name}
-            </Button>
-          ))}
-        </div>
-
-        {/* Search Input */}
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" />
+      {/* Filters */}
+      <div className="bg-white border border-[#EBECEF] rounded-3xl p-4 mb-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="relative w-full md:w-80">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#7C828D]" />
           <Input
+            placeholder="Search dish or SKU..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search dish or SKU..."
-            className="pl-9 bg-zinc-900 border-zinc-800 text-white text-xs"
+            className="pl-9 h-11 rounded-full bg-[#F6F7F9] border-[#EBECEF] text-xs font-medium"
           />
         </div>
-      </div>
 
-      {/* Menu Item Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredItems.map((item) => {
-          const stationCode = item.station?.code || 'HOT';
-          const isTogglingThis = isToggling === item.id;
-
-          return (
-            <div
-              key={item.id}
-              className={`p-4 rounded-2xl border transition flex flex-col justify-between ${
-                item.is_available
-                  ? 'bg-zinc-900/80 border-zinc-800 hover:border-zinc-700'
-                  : 'bg-zinc-950/60 border-rose-500/20 opacity-75'
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => setSelectedCategoryId('all')}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${
+              selectedCategoryId === 'all'
+                ? 'bg-[#119C49] text-white shadow-sm'
+                : 'bg-[#F6F7F9] text-[#7C828D] hover:text-[#1A1D1F]'
+            }`}
+          >
+            All ({items.length})
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedCategoryId(cat.id)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${
+                selectedCategoryId === cat.id
+                  ? 'bg-[#119C49] text-white shadow-sm'
+                  : 'bg-[#F6F7F9] text-[#7C828D] hover:text-[#1A1D1F]'
               }`}
             >
-              <div>
-                <div className="flex items-start justify-between gap-3 mb-2.5">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold border ${
-                          stationBadges[stationCode] || 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                        }`}
-                      >
-                        {item.station?.name || stationCode}
-                      </span>
-                      {item.sku && <span className="text-[10px] text-zinc-500 font-mono">{item.sku}</span>}
-                    </div>
-                    <h3 className="font-bold text-base text-white leading-tight">{item.name}</h3>
-                  </div>
-
-                  <span className="text-base font-black text-amber-400 whitespace-nowrap">
-                    {formatLKR(item.base_price)}
-                  </span>
-                </div>
-
-                {item.description && (
-                  <p className="text-xs text-zinc-400 line-clamp-2 mb-3 leading-relaxed">
-                    {item.description}
-                  </p>
-                )}
-
-                {item.variants && item.variants.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {item.variants.map((v) => (
-                      <span
-                        key={v.id}
-                        className="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded border border-zinc-700"
-                      >
-                        {v.variant_name}: {formatLKR(v.price_override)}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom Actions: Toggle Stock Status */}
-              <div className="border-t border-zinc-800/80 pt-3 flex items-center justify-between">
-                <span
-                  className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
-                    item.is_available ? 'text-emerald-400' : 'text-rose-400'
-                  }`}
-                >
-                  {item.is_available ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" /> In Stock
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-3.5 h-3.5" /> 86 (Unavailable)
-                    </>
-                  )}
-                </span>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={isTogglingThis}
-                  onClick={() => handleToggle(item.id, item.is_available)}
-                  className={`h-7 px-3 text-xs font-semibold rounded-lg transition ${
-                    item.is_available
-                      ? 'border-rose-500/30 text-rose-400 hover:bg-rose-500/10'
-                      : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
-                  }`}
-                >
-                  {item.is_available ? 'Mark 86 (Out of Stock)' : 'Mark In Stock'}
-                </Button>
-              </div>
-            </div>
-          );
-        })}
+              {cat.name}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {filteredItems.length === 0 && (
-        <div className="p-12 text-center text-zinc-500 border border-dashed border-zinc-800 rounded-2xl">
-          <Utensils className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm font-semibold text-zinc-400">No dishes match the filter.</p>
-        </div>
-      )}
+      {/* Dishes Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredItems.map((item) => (
+          <div
+            key={item.id}
+            className={`bg-white border rounded-3xl p-5 shadow-sm flex flex-col justify-between transition ${
+              item.is_available ? 'border-[#EBECEF]' : 'border-rose-200 bg-rose-50/20 opacity-75'
+            }`}
+          >
+            <div>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div>
+                  <h3 className="text-sm font-bold text-[#1A1D1F] leading-snug">{item.name}</h3>
+                  {item.sku && <p className="text-[10px] text-[#7C828D] font-mono mt-0.5">SKU: {item.sku}</p>}
+                </div>
+                {getStationBadge(item.default_station_id)}
+              </div>
 
-      {/* Add Item Modal */}
+              <p className="text-lg font-black text-[#119C49] font-mono mt-2">
+                {formatLKR(Number(item.base_price))}
+              </p>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-[#F4F5F7] flex items-center justify-between">
+              <span
+                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                  item.is_available ? 'bg-[#D1F0DC] text-[#119C49]' : 'bg-rose-100 text-rose-700'
+                }`}
+              >
+                {item.is_available ? 'In Stock' : '86 Unavailable'}
+              </span>
+
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isToggling === item.id}
+                onClick={() => handleToggle(item.id, item.is_available)}
+                className={`h-8 px-3 rounded-full text-xs font-bold border transition ${
+                  item.is_available
+                    ? 'border-rose-200 text-rose-600 hover:bg-rose-50'
+                    : 'border-[#BDE8CB] text-[#119C49] hover:bg-[#D1F0DC]'
+                }`}
+              >
+                {isToggling === item.id ? 'Updating...' : item.is_available ? '86 Dish' : 'Make In Stock'}
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <ItemModal
         isOpen={isAddItemModalOpen}
         onOpenChange={setIsAddItemModalOpen}
         categories={categories}
         stations={stations}
-        onSuccess={(newItem) => {
-          updateCachedItem(newItem);
+        onSuccess={() => {
+          setIsAddItemModalOpen(false);
+          fetchMenu(true);
         }}
       />
     </div>

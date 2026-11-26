@@ -11,12 +11,7 @@ import {
   RotateCcw,
   RefreshCw,
   AlertCircle,
-  Flame,
-  Coffee,
-  IceCream,
   Users,
-  Check,
-  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
@@ -63,7 +58,6 @@ export default function WaiterPage() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const [servingOrderId, setServingOrderId] = useState<string | null>(null);
 
-  // Modals state
   const [amendModal, setAmendModal] = useState<{
     isOpen: boolean;
     orderId: string;
@@ -88,26 +82,18 @@ export default function WaiterPage() {
 
   const previousReadyOrdersRef = useRef<Set<string>>(new Set());
 
-  // Fetch tables and their active orders
   const fetchTablesAndOrders = useCallback(async (silent = false) => {
     try {
       if (!silent) setIsLoading(true);
       const supabase = createClient();
 
-      // 1. Fetch tables
-      const { data: tablesData, error: tablesErr } = await supabase
+      const { data: tablesData } = await supabase
         .from('dining_tables')
         .select('id, table_number, seating_capacity, status, current_order_id')
         .eq('branch_id', '00000000-0000-0000-0000-000000000001')
         .order('table_number', { ascending: true });
 
-      if (tablesErr) {
-        console.warn('Error fetching tables:', tablesErr.message);
-        return;
-      }
-
-      // 2. Fetch active orders
-      const { data: ordersData, error: ordersErr } = await supabase
+      const { data: ordersData } = await supabase
         .from('orders')
         .select(`
           id,
@@ -143,7 +129,6 @@ export default function WaiterPage() {
 
         const itemsCount = (o.order_items || []).reduce((sum: number, it: any) => sum + (it.quantity || 1), 0);
 
-        // Map by table ID
         if (!activeOrdersMap.has(o.table_id)) {
           activeOrdersMap.set(o.table_id, {
             id: o.id,
@@ -160,7 +145,6 @@ export default function WaiterPage() {
         }
       });
 
-      // Check for newly ready orders to trigger audible chime
       const currentReadyOrders = new Set<string>();
       activeOrdersMap.forEach((ord) => {
         if (ord.kds_status === 'ready') {
@@ -172,7 +156,6 @@ export default function WaiterPage() {
       });
       previousReadyOrdersRef.current = currentReadyOrders;
 
-      // Merge into tables list
       const merged: WaiterTable[] = (tablesData || []).map((tbl: any) => {
         const currentOrder = activeOrdersMap.get(tbl.id) || null;
         return {
@@ -192,7 +175,6 @@ export default function WaiterPage() {
     }
   }, []);
 
-  // Handle Mark as Served
   const handleMarkServed = async (orderId: string) => {
     try {
       setServingOrderId(orderId);
@@ -215,7 +197,6 @@ export default function WaiterPage() {
     }
   };
 
-  // Realtime subscription
   useEffect(() => {
     fetchMenu();
     fetchTablesAndOrders();
@@ -242,7 +223,6 @@ export default function WaiterPage() {
         }
       });
 
-    // Fallback polling every 6 seconds
     const interval = setInterval(() => {
       fetchTablesAndOrders(true);
     }, 6000);
@@ -253,7 +233,6 @@ export default function WaiterPage() {
     };
   }, [fetchMenu, fetchTablesAndOrders]);
 
-  // Ready orders list across all tables
   const readyOrders = tables
     .filter((t) => t.current_order && t.current_order.kds_status === 'ready')
     .map((t) => ({
@@ -261,7 +240,6 @@ export default function WaiterPage() {
       order: t.current_order!,
     }));
 
-  // Filtered tables
   const filteredTables = tables.filter((t) => {
     if (filter === 'occupied') return t.status === 'occupied' || !!t.current_order;
     if (filter === 'ready') return t.current_order && t.current_order.kds_status === 'ready';
@@ -270,32 +248,32 @@ export default function WaiterPage() {
   });
 
   return (
-    <div className="flex-1 flex flex-col bg-zinc-950 text-white min-h-[calc(100vh-4rem)]">
+    <div className="flex-1 flex flex-col bg-[#F6F7F9] text-[#1A1D1F] h-full overflow-hidden">
       {/* Header */}
-      <header className="sticky top-16 z-30 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800 px-4 sm:px-6 py-3">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <header className="bg-white border-b border-[#EBECEF] px-6 py-4 shrink-0 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold">
-              <Smartphone className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-full bg-[#D1F0DC] text-[#119C49] flex items-center justify-center font-bold border border-[#BDE8CB]">
+              <Smartphone className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base font-extrabold tracking-tight text-white leading-tight">
+              <h1 className="text-base font-extrabold tracking-tight text-[#1A1D1F] leading-tight">
                 Waiter Service Panel
               </h1>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[11px] text-zinc-400">
-                  Floor Dining &bull; {currentUser?.display_name || 'Waiter Station'}
+                <span className="text-xs text-[#7C828D]">
+                  {currentUser?.display_name || 'Waiter Station'}
                 </span>
                 <div
-                  className={`inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-mono font-semibold border ${
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
                     connectionStatus === 'connected'
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                      : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                      ? 'bg-[#D1F0DC] text-[#119C49] border-[#BDE8CB]'
+                      : 'bg-[#FEF3E2] text-[#F59E0B] border-[#FDE3B8]'
                   }`}
                 >
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
-                      connectionStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+                      connectionStatus === 'connected' ? 'bg-[#119C49] animate-pulse' : 'bg-[#F59E0B]'
                     }`}
                   />
                   <span>{connectionStatus === 'connected' ? 'LIVE SYNC' : connectionStatus.toUpperCase()}</span>
@@ -305,12 +283,12 @@ export default function WaiterPage() {
           </div>
 
           {/* Quick Filters */}
-          <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 overflow-x-auto">
+          <div className="flex items-center gap-1 bg-[#F6F7F9] p-1 rounded-full border border-[#EBECEF]">
             <button
               type="button"
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                filter === 'all' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                filter === 'all' ? 'bg-[#119C49] text-white shadow-sm' : 'text-[#7C828D] hover:text-[#1A1D1F]'
               }`}
             >
               All ({tables.length})
@@ -318,12 +296,12 @@ export default function WaiterPage() {
             <button
               type="button"
               onClick={() => setFilter('ready')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition ${
                 filter === 'ready'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-sm'
+                  ? 'bg-[#119C49] text-white shadow-sm'
                   : readyOrders.length > 0
-                  ? 'text-emerald-400 hover:bg-emerald-500/10'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-[#D1F0DC] text-[#119C49]'
+                  : 'text-[#7C828D] hover:text-[#1A1D1F]'
               }`}
             >
               <Bell className="w-3.5 h-3.5" />
@@ -332,8 +310,8 @@ export default function WaiterPage() {
             <button
               type="button"
               onClick={() => setFilter('occupied')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                filter === 'occupied' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                filter === 'occupied' ? 'bg-[#119C49] text-white shadow-sm' : 'text-[#7C828D] hover:text-[#1A1D1F]'
               }`}
             >
               Occupied ({tables.filter((t) => t.status === 'occupied').length})
@@ -341,8 +319,8 @@ export default function WaiterPage() {
             <button
               type="button"
               onClick={() => setFilter('available')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                filter === 'available' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                filter === 'available' ? 'bg-[#119C49] text-white shadow-sm' : 'text-[#7C828D] hover:text-[#1A1D1F]'
               }`}
             >
               Available ({tables.filter((t) => t.status === 'available' && !t.current_order).length})
@@ -352,20 +330,20 @@ export default function WaiterPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1 space-y-6">
+      <main className="p-6 flex-1 overflow-y-auto space-y-6 scrollbar-none">
         {/* Ready To Serve Alert Banner */}
         {readyOrders.length > 0 && (
-          <div className="p-4 rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/40 shadow-xl shadow-emerald-950/20 animate-in fade-in zoom-in-95">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500 text-zinc-950 flex items-center justify-center font-black animate-bounce">
+          <div className="p-5 rounded-3xl bg-[#D1F0DC] border-2 border-[#BDE8CB] shadow-md animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-[#119C49] text-white flex items-center justify-center font-black animate-bounce shadow-md">
                 <Bell className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-extrabold text-emerald-400 uppercase tracking-wide">
+                <h3 className="text-sm font-extrabold text-[#119C49] uppercase tracking-wide">
                   Ready to Serve ({readyOrders.length} Order{readyOrders.length > 1 ? 's' : ''})
                 </h3>
-                <p className="text-xs text-zinc-300">
-                  Kitchen stations have marked the following table orders as fully prepared. Pick up and serve to guests!
+                <p className="text-xs text-[#1A1D1F]">
+                  Kitchen stations marked the following orders ready. Deliver to guests promptly!
                 </p>
               </div>
             </div>
@@ -374,23 +352,23 @@ export default function WaiterPage() {
               {readyOrders.map(({ table, order }) => (
                 <div
                   key={order.id}
-                  className="p-3.5 rounded-xl bg-zinc-900 border border-emerald-500/30 flex items-center justify-between gap-3 shadow-md"
+                  className="p-4 rounded-2xl bg-white border border-[#BDE8CB] flex items-center justify-between gap-3 shadow-sm"
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-black text-white">Table {table.table_number}</span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      <span className="text-sm font-black text-[#1A1D1F]">Table {table.table_number}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#D1F0DC] text-[#119C49]">
                         {order.order_number}
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-400 mt-0.5">{order.items_count} items &bull; {formatLKR(order.total_amount)}</p>
+                    <p className="text-xs text-[#7C828D] mt-0.5">{order.items_count} items &bull; {formatLKR(order.total_amount)}</p>
                   </div>
 
                   <Button
                     type="button"
                     disabled={servingOrderId === order.id}
                     onClick={() => handleMarkServed(order.id)}
-                    className="h-10 px-4 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-xl gap-1.5 shadow-md transition"
+                    className="h-10 px-4 bg-[#119C49] hover:bg-[#0E853E] text-white font-bold text-xs rounded-xl gap-1.5 shadow-md transition"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>{servingOrderId === order.id ? 'Serving...' : 'Mark Served'}</span>
@@ -409,102 +387,93 @@ export default function WaiterPage() {
             const isReady = order?.kds_status === 'ready';
             const isPartiallyReady = order?.kds_status === 'partially_ready';
             const isPreparing = order?.kds_status === 'in_preparation';
-            const isSubmitted = order?.kds_status === 'submitted';
             const isServed = order?.kds_status === 'served';
 
             return (
               <div
                 key={table.id}
-                className={`rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 border bg-zinc-900 shadow-md ${
+                className={`rounded-3xl p-5 flex flex-col justify-between transition-all duration-200 border bg-white shadow-sm ${
                   isReady
-                    ? 'border-emerald-500 ring-2 ring-emerald-500/30 shadow-emerald-950/20'
+                    ? 'border-2 border-[#119C49] ring-4 ring-[#119C49]/10 shadow-md'
                     : hasOrder
-                    ? 'border-zinc-800 hover:border-zinc-700'
-                    : 'border-zinc-800/80 hover:border-emerald-500/30 bg-zinc-900/60'
+                    ? 'border-[#EBECEF] hover:border-[#119C49]/40'
+                    : 'border-[#EBECEF] bg-[#FCFCFD]'
                 }`}
               >
-                {/* Table Header */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
                       <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-base border ${
+                        className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm border shadow-sm ${
                           isReady
-                            ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
+                            ? 'bg-[#119C49] text-white border-[#119C49]'
                             : hasOrder
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                            ? 'bg-[#FEF3E2] text-[#F59E0B] border-[#FDE3B8]'
+                            : 'bg-[#F4F5F7] text-[#7C828D] border-[#EBECEF]'
                         }`}
                       >
                         {table.table_number}
                       </div>
                       <div>
-                        <span className="block text-sm font-bold text-white">Table {table.table_number}</span>
-                        <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                        <span className="block text-sm font-bold text-[#1A1D1F]">Table {table.table_number}</span>
+                        <span className="text-[11px] text-[#7C828D] flex items-center gap-1 font-medium">
                           <Users className="w-3 h-3" />
                           {table.seating_capacity} seats
                         </span>
                       </div>
                     </div>
 
-                    {/* Table Status Pill */}
                     <span
-                      className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                      className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
                         isReady
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 animate-pulse font-extrabold'
+                          ? 'bg-[#D1F0DC] text-[#119C49] animate-pulse font-extrabold'
                           : hasOrder
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                          : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                          ? 'bg-[#FEF3E2] text-[#F59E0B]'
+                          : 'bg-[#F4F5F7] text-[#7C828D]'
                       }`}
                     >
                       {isReady ? 'READY TO SERVE' : hasOrder ? 'OCCUPIED' : 'AVAILABLE'}
                     </span>
                   </div>
 
-                  {/* Order Details (if occupied) */}
                   {order ? (
-                    <div className="mt-3 p-3 rounded-xl bg-zinc-950/70 border border-zinc-800/80 space-y-2">
+                    <div className="p-3.5 rounded-2xl bg-[#F8F9FA] border border-[#EBECEF] space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-mono font-bold text-zinc-200">{order.order_number}</span>
+                        <span className="font-mono font-bold text-[#1A1D1F]">{order.order_number}</span>
                         <ElapsedTimer startTime={order.created_at} />
                       </div>
 
-                      {/* Preparation Status Pill */}
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-zinc-400">Prep Status:</span>
+                        <span className="text-[#7C828D]">Prep Status:</span>
                         <span
-                          className={`font-semibold uppercase text-[10px] px-2 py-0.5 rounded-md ${
+                          className={`font-bold uppercase text-[10px] px-2 py-0.5 rounded-full ${
                             isReady
-                              ? 'bg-emerald-500/20 text-emerald-400 font-bold'
+                              ? 'bg-[#D1F0DC] text-[#119C49]'
                               : isPartiallyReady
-                              ? 'bg-orange-500/20 text-orange-400 font-bold'
+                              ? 'bg-[#FEF3E2] text-[#F59E0B]'
                               : isPreparing
-                              ? 'bg-blue-500/20 text-blue-400'
+                              ? 'bg-blue-50 text-blue-600'
                               : isServed
-                              ? 'bg-cyan-500/20 text-cyan-400'
-                              : 'bg-amber-500/20 text-amber-400'
+                              ? 'bg-cyan-50 text-cyan-600'
+                              : 'bg-amber-50 text-amber-600'
                           }`}
                         >
                           {order.kds_status.replace('_', ' ')}
                         </span>
                       </div>
 
-                      {/* Station Progress */}
                       {order.station_progress.length > 0 && (
-                        <div className="pt-2 border-t border-zinc-800/60">
-                          <p className="text-[10px] text-zinc-500 uppercase font-mono font-bold mb-1">
-                            Station Routing:
-                          </p>
+                        <div className="pt-2 border-t border-[#EBECEF]">
                           <div className="flex flex-wrap gap-1">
                             {order.station_progress.map((stn, idx) => (
                               <span
                                 key={idx}
-                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${
+                                className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${
                                   stn.status === 'ready' || stn.status === 'completed'
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                    ? 'bg-[#D1F0DC] text-[#119C49] border-[#BDE8CB]'
                                     : stn.status === 'in_preparation'
-                                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                                    : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                    ? 'bg-blue-50 text-blue-600 border-blue-200'
+                                    : 'bg-white text-[#7C828D] border-[#EBECEF]'
                                 }`}
                               >
                                 {stn.station_code}: {stn.status}
@@ -515,31 +484,29 @@ export default function WaiterPage() {
                       )}
 
                       <div className="pt-1 flex items-center justify-between text-xs">
-                        <span className="text-zinc-400">{order.items_count} items</span>
-                        <span className="font-mono font-bold text-white">{formatLKR(order.total_amount)}</span>
+                        <span className="text-[#7C828D]">{order.items_count} items</span>
+                        <span className="font-mono font-bold text-[#119C49]">{formatLKR(order.total_amount)}</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-3 p-4 rounded-xl bg-zinc-950/40 border border-dashed border-zinc-800/80 text-center">
-                      <p className="text-xs text-zinc-500">Table ready for walk-in or reservation.</p>
+                    <div className="p-4 rounded-2xl bg-[#F8F9FA] border border-dashed border-[#EBECEF] text-center">
+                      <p className="text-xs text-[#7C828D]">Table available for seating guests.</p>
                     </div>
                   )}
                 </div>
 
-                {/* Table Action Buttons */}
-                <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-col gap-2">
+                <div className="mt-4 pt-3 border-t border-[#F4F5F7] flex flex-col gap-2">
                   {order ? (
                     <>
-                      {/* If Ready or In Prep, allow marking Served */}
                       {(isReady || isPartiallyReady || isPreparing) && (
                         <Button
                           type="button"
                           disabled={servingOrderId === order.id}
                           onClick={() => handleMarkServed(order.id)}
-                          className={`w-full h-10 font-bold text-xs rounded-xl gap-1.5 transition shadow-sm ${
+                          className={`w-full h-11 font-bold text-xs rounded-2xl gap-1.5 transition ${
                             isReady
-                              ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950'
-                              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
+                              ? 'bg-[#119C49] hover:bg-[#0E853E] text-white shadow-md shadow-[#119C49]/20'
+                              : 'bg-white border border-[#EBECEF] text-[#1A1D1F] hover:bg-[#F6F7F9]'
                           }`}
                         >
                           <CheckCircle2 className="w-4 h-4" />
@@ -547,7 +514,6 @@ export default function WaiterPage() {
                         </Button>
                       )}
 
-                      {/* Add Extra Items / Amend Order */}
                       <Button
                         type="button"
                         variant="outline"
@@ -559,7 +525,7 @@ export default function WaiterPage() {
                             tableNumber: table.table_number,
                           })
                         }
-                        className="w-full h-9 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-amber-400 hover:text-amber-300 text-xs font-semibold gap-1.5"
+                        className="w-full h-10 bg-[#D1F0DC] border-none text-[#119C49] hover:bg-[#C6ECD4] text-xs font-bold rounded-2xl gap-1.5 transition"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>+ Add Items (Amend)</span>
@@ -575,7 +541,7 @@ export default function WaiterPage() {
                           tableNumber: table.table_number,
                         })
                       }
-                      className="w-full h-10 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold text-xs rounded-xl gap-1.5 transition"
+                      className="w-full h-11 bg-[#119C49] hover:bg-[#0E853E] text-white font-bold text-xs rounded-2xl gap-1.5 transition shadow-sm"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Open Table Order</span>

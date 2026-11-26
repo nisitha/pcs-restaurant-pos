@@ -68,8 +68,8 @@ export function PinPad({
             key={idx}
             className={`w-5 h-5 rounded-full transition-all duration-200 border-2 ${
               idx < pin.length
-                ? 'bg-amber-400 border-amber-400 scale-110 shadow-lg shadow-amber-500/20'
-                : 'bg-zinc-800/80 border-zinc-700'
+                ? 'bg-[#119C49] border-[#119C49] scale-110 shadow-md shadow-[#119C49]/30'
+                : 'bg-[#F4F5F7] border-[#EBECEF]'
             }`}
           />
         ))}
@@ -77,7 +77,7 @@ export function PinPad({
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="mb-4 text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-lg text-center animate-shake">
+        <div className="mb-4 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-4 py-2 rounded-2xl text-center animate-shake">
           {errorMessage}
         </div>
       )}
@@ -93,7 +93,7 @@ export function PinPad({
                 variant="outline"
                 disabled={isLoading || pin.length === 0}
                 onClick={handleClear}
-                className="h-16 text-sm font-semibold rounded-2xl bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 active:scale-95 transition"
+                className="h-16 text-sm font-semibold rounded-2xl bg-[#F6F7F9] border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#EBECEF] active:scale-95 transition"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -108,7 +108,7 @@ export function PinPad({
                 variant="outline"
                 disabled={isLoading || pin.length === 0}
                 onClick={handleBackspace}
-                className="h-16 text-sm font-semibold rounded-2xl bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 active:scale-95 transition"
+                className="h-16 text-sm font-semibold rounded-2xl bg-[#F6F7F9] border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#EBECEF] active:scale-95 transition"
               >
                 <Delete className="w-5 h-5" />
               </Button>
@@ -119,10 +119,9 @@ export function PinPad({
             <Button
               key={key}
               type="button"
-              variant="outline"
               disabled={isLoading}
               onClick={() => handleDigit(key)}
-              className="h-16 text-2xl font-bold rounded-2xl bg-zinc-900/90 border-zinc-800 text-white hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition shadow-sm"
+              className="h-16 text-xl font-bold font-mono rounded-2xl bg-white border border-[#EBECEF] text-[#1A1D1F] hover:bg-[#D1F0DC] hover:text-[#119C49] hover:border-[#BDE8CB] active:scale-95 shadow-sm transition"
             >
               {key}
             </Button>

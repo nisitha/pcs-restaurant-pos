@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { NavBar } from '@/components/layout/nav-bar';
+import { AppSidebarShell } from '@/components/layout/sidebar-shell';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: '--font-sans',
   subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
@@ -26,11 +28,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
-        <NavBar />
-        <main className="flex-1 flex flex-col">{children}</main>
+      <body className="min-h-full flex flex-col bg-[#F6F7F9] text-[#1A1D1F] font-sans">
+        <AppSidebarShell>{children}</AppSidebarShell>
       </body>
     </html>
   );

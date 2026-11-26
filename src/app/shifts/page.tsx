@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useShiftStore } from '@/stores/shift-store';
 import { Button } from '@/components/ui/button';
@@ -29,14 +29,14 @@ export default function ShiftsPage() {
   const [isCloseShiftOpen, setIsCloseShiftOpen] = useState(false);
 
   return (
-    <div className="flex-1 p-4 sm:p-8 max-w-6xl mx-auto w-full">
+    <div className="flex-1 p-6 sm:p-8 max-w-6xl mx-auto w-full overflow-y-auto scrollbar-none">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800 pb-6 mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#EBECEF] pb-6 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2.5">
-            <Layers className="w-7 h-7 text-amber-500" /> Cash Shift & Drawer Management
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1D1F] flex items-center gap-2.5">
+            <Layers className="w-7 h-7 text-[#119C49]" /> Accounting & Shifts
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-xs text-[#7C828D] mt-1">
             Opening float tracking, manual cash-in/out records, and end-of-shift reconciliation.
           </p>
         </div>
@@ -45,7 +45,7 @@ export default function ShiftsPage() {
           {!activeShift ? (
             <Button
               onClick={() => setIsOpenShiftOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs gap-1.5"
+              className="bg-[#119C49] hover:bg-[#0E853E] text-white font-bold text-xs rounded-full gap-1.5 shadow-md shadow-[#119C49]/20"
             >
               <Wallet className="w-4 h-4" />
               <span>Open New Shift</span>
@@ -55,15 +55,14 @@ export default function ShiftsPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsDrawerActionOpen(true)}
-                className="bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white text-xs gap-1.5"
+                className="bg-white border-[#EBECEF] text-[#1A1D1F] hover:bg-[#F6F7F9] text-xs font-bold rounded-full gap-1.5"
               >
-                <ArrowDownRight className="w-4 h-4 text-emerald-400" />
+                <ArrowDownRight className="w-4 h-4 text-[#119C49]" />
                 <span>Cash In / Out</span>
               </Button>
               <Button
-                variant="outline"
                 onClick={() => setIsCloseShiftOpen(true)}
-                className="bg-zinc-900 border-zinc-800 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs gap-1.5"
+                className="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 text-xs font-bold rounded-full gap-1.5"
               >
                 <Lock className="w-4 h-4" />
                 <span>Close Shift</span>
@@ -73,69 +72,73 @@ export default function ShiftsPage() {
         </div>
       </div>
 
-      {/* Active Shift Card */}
+      {/* Active Shift Card or Empty State */}
       {activeShift ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-5 rounded-2xl bg-zinc-900/80 border border-zinc-800">
-            <span className="text-xs text-zinc-400 block mb-1">Shift Status</span>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-lg font-bold text-emerald-400 uppercase tracking-wide">Active Open</span>
+        <div className="bg-white border border-[#EBECEF] rounded-3xl p-6 shadow-sm mb-8 space-y-6">
+          <div className="flex items-center justify-between border-b border-[#F4F5F7] pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#D1F0DC] text-[#119C49] flex items-center justify-center font-bold">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-extrabold text-[#1A1D1F]">Active Cashier Shift</h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#D1F0DC] text-[#119C49]">
+                    OPEN
+                  </span>
+                </div>
+                <p className="text-xs text-[#7C828D]">
+                  Opened on {formatRestaurantDateTime(activeShift.opened_at)}
+                </p>
+              </div>
             </div>
-            <span className="text-[11px] text-zinc-500 block mt-1">
-              Started: {formatRestaurantDateTime(activeShift.opened_at, 'time')}
-            </span>
+
+            <div className="text-right">
+              <span className="text-xs text-[#7C828D]">Cashier:</span>
+              <p className="text-sm font-bold text-[#1A1D1F]">{currentUser?.display_name || 'Active Cashier'}</p>
+            </div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-zinc-900/80 border border-zinc-800">
-            <span className="text-xs text-zinc-400 block mb-1">Opening Cash Float</span>
-            <p className="text-2xl font-bold text-white">{formatLKR(activeShift.opening_float)}</p>
-            <span className="text-[11px] text-zinc-500 block mt-1">Drawer Starting Amount</span>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-zinc-900/80 border border-zinc-800">
-            <span className="text-xs text-zinc-400 block mb-1">Accumulated Cash Sales</span>
-            <p className="text-2xl font-bold text-white">{formatLKR(activeShift.total_sales)}</p>
-            <span className="text-[11px] text-zinc-500 block mt-1">POS Sales Transactions</span>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-            <span className="text-xs text-amber-400 font-semibold block mb-1">System Expected Cash</span>
-            <p className="text-2xl font-black text-amber-300">{formatLKR(activeShift.expected_cash)}</p>
-            <span className="text-[11px] text-amber-400/70 block mt-1">Float + Sales + Cash In - Out</span>
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-2xl bg-[#F8F9FA] border border-[#EBECEF]">
+              <p className="text-xs text-[#7C828D]">Opening Cash Float</p>
+              <p className="text-xl font-black text-[#1A1D1F] font-mono mt-1">
+                {formatLKR(activeShift.opening_float)}
+              </p>
+            </div>
+            <div className="p-4 rounded-2xl bg-[#F8F9FA] border border-[#EBECEF]">
+              <p className="text-xs text-[#7C828D]">Total Cash Sales</p>
+              <p className="text-xl font-black text-[#119C49] font-mono mt-1">
+                {formatLKR(activeShift.total_sales || 0)}
+              </p>
+            </div>
+            <div className="p-4 rounded-2xl bg-[#D1F0DC] border border-[#BDE8CB]">
+              <p className="text-xs text-[#119C49] font-bold">Expected Cash in Drawer</p>
+              <p className="text-xl font-black text-[#119C49] font-mono mt-1">
+                {formatLKR(activeShift.expected_cash || activeShift.opening_float)}
+              </p>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="p-8 rounded-3xl bg-zinc-900/40 border border-zinc-800 text-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-800 text-zinc-400 flex items-center justify-center mx-auto mb-3">
-            <Lock className="w-6 h-6" />
-          </div>
-          <h3 className="text-lg font-bold text-white mb-1">No Active Cash Shift</h3>
-          <p className="text-xs text-zinc-400 max-w-sm mx-auto mb-4">
-            There is no active cash drawer shift open for the current terminal. Open a shift with an initial float to begin ringing orders.
+        <div className="h-64 flex flex-col items-center justify-center text-center p-6 bg-white rounded-3xl border border-[#EBECEF] shadow-sm mb-8">
+          <Wallet className="w-12 h-12 text-[#7C828D]/50 mb-3" />
+          <h3 className="text-base font-extrabold text-[#1A1D1F] mb-1">No Active Shift Opened</h3>
+          <p className="text-xs text-[#7C828D] max-w-sm mb-4">
+            Open a shift and register your opening float to enable cash order billing and drawer balance tracking.
           </p>
           <Button
             onClick={() => setIsOpenShiftOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs gap-1.5"
+            className="bg-[#119C49] hover:bg-[#0E853E] text-white font-bold text-xs rounded-full gap-2 shadow-md shadow-[#119C49]/20"
           >
             <Wallet className="w-4 h-4" />
-            <span>Open Cash Shift Now</span>
+            <span>Open Shift Now</span>
           </Button>
         </div>
       )}
 
-      {/* Audit & Compliance Standards Card */}
-      <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
-        <h3 className="font-bold text-sm text-white flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Cash Reconciliation Compliance
-        </h3>
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          In adherence to <strong>Section 6</strong> of the Restaurant POS Specification:
-          All cashier shift openings, manual drawer pay-ins/pay-outs, and closing cash counts are recorded with the responsible user ID, UTC timestamp, and explicit reason. Closing shortages or overages automatically generate immutable entries in the <code className="text-amber-400 bg-zinc-800 px-1 py-0.5 rounded">audit_logs</code> table.
-        </p>
-      </div>
-
-      {/* Global Dialogs */}
+      {/* Global Shift Dialogs */}
       <OpenShiftDialog isOpen={isOpenShiftOpen} onOpenChange={setIsOpenShiftOpen} />
       <CashDrawerDialog isOpen={isDrawerActionOpen} onOpenChange={setIsDrawerActionOpen} />
       <CloseShiftDialog isOpen={isCloseShiftOpen} onOpenChange={setIsCloseShiftOpen} />

@@ -15,7 +15,6 @@ import {
   Crown,
   Lock,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,7 +26,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Fetch available staff members for quick switcher
   useEffect(() => {
     fetch('/api/auth/staff-list')
       .then((res) => res.json())
@@ -37,7 +35,6 @@ export default function LoginPage() {
         }
       })
       .catch(() => {
-        // Fallback default staff
         setStaffList([
           { id: '11111111-1111-1111-1111-111111111111', display_name: 'Kasun Perera', role: 'owner', branch_id: '00000000-0000-0000-0000-000000000001' },
           { id: '22222222-2222-2222-2222-222222222222', display_name: 'Dilshan Silva', role: 'manager', branch_id: '00000000-0000-0000-0000-000000000001' },
@@ -68,7 +65,6 @@ export default function LoginPage() {
         throw new Error(data.message || 'Invalid PIN code.');
       }
 
-      // Store in auth store & redirect
       login(data.user);
       router.push(data.redirectUrl);
     } catch (err: unknown) {
@@ -83,91 +79,103 @@ export default function LoginPage() {
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
       case 'owner':
-        return <Crown className="w-4 h-4 text-amber-400" />;
+        return <Crown className="w-3.5 h-3.5 text-amber-500" />;
       case 'manager':
-        return <Shield className="w-4 h-4 text-purple-400" />;
+        return <Shield className="w-3.5 h-3.5 text-purple-500" />;
       case 'cashier':
-        return <MonitorCheck className="w-4 h-4 text-blue-400" />;
+        return <MonitorCheck className="w-3.5 h-3.5 text-[#119C49]" />;
       case 'waiter':
-        return <Smartphone className="w-4 h-4 text-emerald-400" />;
+        return <Smartphone className="w-3.5 h-3.5 text-blue-500" />;
       case 'chef':
-        return <ChefHat className="w-4 h-4 text-orange-400" />;
+        return <ChefHat className="w-3.5 h-3.5 text-orange-500" />;
       default:
-        return <UserCheck className="w-4 h-4 text-zinc-400" />;
+        return <UserCheck className="w-3.5 h-3.5 text-[#7C828D]" />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col justify-center items-center p-4 sm:p-6">
-      <div className="w-full max-w-md bg-zinc-900/80 border border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
-        {/* Brand Header */}
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mx-auto mb-3 shadow-inner">
-            <UtensilsCrossed className="w-7 h-7" />
+    <div className="min-h-screen w-full bg-[#F6F7F9] flex flex-col justify-between p-6">
+      {/* Brand Header */}
+      <header className="max-w-4xl mx-auto w-full flex items-center justify-between pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[#D1F0DC] text-[#119C49] flex items-center justify-center font-bold border border-[#BDE8CB] shadow-sm">
+            <UtensilsCrossed className="w-5 h-5" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-white">PCS Restaurant POS</h1>
-          <p className="text-xs text-zinc-400 mt-1">Enter your 4-digit staff PIN code to sign in</p>
+          <div>
+            <span className="font-extrabold text-base text-[#1A1D1F] tracking-tight block">
+              PCS RESTAURANT POS
+            </span>
+            <span className="text-[10px] text-[#7C828D] font-mono">
+              Terminal Access &bull; Colombo Branch
+            </span>
+          </div>
         </div>
+      </header>
 
-        {/* Staff Quick Selectors */}
-        <div className="mb-6">
-          <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block mb-2 text-center">
-            {selectedStaff ? `Logging in as: ${selectedStaff.display_name}` : 'Select Staff Account (Optional)'}
-          </label>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+      {/* Main PIN Pad Card */}
+      <main className="max-w-md mx-auto w-full">
+        <div className="bg-white border border-[#EBECEF] rounded-3xl p-8 shadow-xl text-center">
+          {/* Lock Icon Halo */}
+          <div className="w-16 h-16 rounded-full bg-[#D1F0DC] text-[#119C49] flex items-center justify-center mx-auto mb-4 border border-[#BDE8CB] shadow-sm">
+            <Lock className="w-7 h-7" />
+          </div>
+
+          <h2 className="text-xl font-extrabold text-[#1A1D1F] tracking-tight">Staff PIN Login</h2>
+          <p className="text-xs text-[#7C828D] mt-1 mb-6">
+            Enter your 4-digit staff PIN code to unlock your station terminal.
+          </p>
+
+          {/* Quick Staff Selection Chips */}
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-1.5">
             {staffList.map((staff) => {
               const isSelected = selectedStaff?.id === staff.id;
               return (
                 <button
                   key={staff.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedStaff(isSelected ? null : staff);
-                    setPin('');
-                    setErrorMessage(null);
-                  }}
-                  className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition ${
+                  onClick={() => setSelectedStaff(isSelected ? null : staff)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition border ${
                     isSelected
-                      ? 'bg-amber-500/15 border-amber-500/50 text-white shadow-md'
-                      : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                      ? 'bg-[#D1F0DC] border-[#119C49] text-[#119C49] shadow-sm'
+                      : 'bg-[#F6F7F9] border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#EBECEF]'
                   }`}
                 >
-                  <div className="mb-1">{getRoleIcon(staff.role)}</div>
-                  <span className="text-[11px] font-semibold truncate w-full leading-tight">
-                    {staff.display_name.split(' ')[0]}
-                  </span>
-                  <span className="text-[9px] text-zinc-500 font-mono capitalize">{staff.role}</span>
+                  {getRoleIcon(staff.role)}
+                  <span>{staff.display_name}</span>
                 </button>
               );
             })}
           </div>
+
+          {/* Keypad */}
+          <PinPad
+            pin={pin}
+            onPinChange={setPin}
+            onSubmit={handlePinSubmit}
+            isLoading={isLoading}
+            errorMessage={errorMessage}
+          />
         </div>
 
-        {/* PIN Pad Component */}
-        <PinPad
-          pin={pin}
-          maxDigits={4}
-          onPinChange={(newPin) => {
-            setPin(newPin);
-            setErrorMessage(null);
-          }}
-          onSubmit={handlePinSubmit}
-          isLoading={isLoading}
-          errorMessage={errorMessage}
-        />
-
-        {/* Test PINs Helper Card */}
-        <div className="mt-8 pt-4 border-t border-zinc-800/80 text-center">
-          <p className="text-[11px] text-zinc-500 font-medium mb-1.5">Default Testing PINs:</p>
-          <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] text-zinc-400">
-            <span className="bg-zinc-800/60 px-2 py-0.5 rounded border border-zinc-800">Owner: 1111</span>
-            <span className="bg-zinc-800/60 px-2 py-0.5 rounded border border-zinc-800">Manager: 2222</span>
-            <span className="bg-zinc-800/60 px-2 py-0.5 rounded border border-zinc-800 font-semibold text-blue-400">Cashier: 3333</span>
-            <span className="bg-zinc-800/60 px-2 py-0.5 rounded border border-zinc-800">Waiter: 4444</span>
-            <span className="bg-zinc-800/60 px-2 py-0.5 rounded border border-zinc-800">Chef: 5555</span>
+        {/* Demo Fast PIN Hints */}
+        <div className="mt-4 p-4 rounded-2xl bg-white border border-[#EBECEF] shadow-sm text-center">
+          <p className="text-[11px] font-bold text-[#7C828D] uppercase tracking-wide mb-1.5">
+            Default Demo PINs:
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-mono font-bold">
+            <span className="text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">Owner: 1111</span>
+            <span className="text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">Manager: 2222</span>
+            <span className="text-[#119C49] bg-[#D1F0DC] px-2.5 py-1 rounded-full border border-[#BDE8CB]">Cashier: 3333</span>
+            <span className="text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">Waiter: 4444</span>
+            <span className="text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">Chef: 5555</span>
           </div>
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="text-center text-[11px] text-[#7C828D] pt-4">
+        PCS Commercial Restaurant POS &bull; Regional Default: LKR (Rs.) &bull; Asia/Colombo
+      </footer>
     </div>
   );
 }
