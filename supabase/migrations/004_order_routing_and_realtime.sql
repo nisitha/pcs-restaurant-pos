@@ -5,8 +5,9 @@
 --              adds idempotency tracking, and creates the atomic submit_pos_order RPC.
 -- ============================================================================
 
--- 1. Ensure idempotency_key column exists on orders table
+-- 1. Ensure columns exist on tables
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(100);
+ALTER TABLE dining_tables ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW());
 
 DO $$ BEGIN
     ALTER TABLE orders ADD CONSTRAINT uq_orders_idempotency_key UNIQUE (idempotency_key);
@@ -373,3 +374,12 @@ $$;
 -- Grant execution to API roles
 GRANT EXECUTE ON FUNCTION submit_pos_order(UUID, UUID, UUID, order_type, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT, TEXT, JSONB) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION generate_daily_order_number(UUID) TO anon, authenticated, service_role;
+
+-- Grant table access to API roles
+GRANT SELECT, INSERT, UPDATE, DELETE ON orders TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON order_items TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON order_item_modifiers TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON station_routing_tickets TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON station_ticket_items TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dining_tables TO anon, authenticated, service_role;
+GRANT SELECT, INSERT ON audit_logs TO anon, authenticated, service_role;
