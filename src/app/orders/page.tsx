@@ -23,7 +23,9 @@ import {
   CreditCard,
   CheckCircle2,
   AlertCircle,
+  ShieldAlert,
 } from 'lucide-react';
+import { VoidRefundModal } from '@/components/orders/void-refund-modal';
 
 export default function OrdersHistoryPage() {
   const router = useRouter();
@@ -34,6 +36,8 @@ export default function OrdersHistoryPage() {
   const [filterPayment, setFilterPayment] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [selectedOrderForVoid, setSelectedOrderForVoid] = useState<any | null>(null);
+  const [isVoidModalOpen, setIsVoidModalOpen] = useState(false);
 
   const fetchOrders = async () => {
     try {
@@ -223,24 +227,49 @@ export default function OrdersHistoryPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 pt-3 md:pt-0">
+              <div className="flex items-center justify-between md:justify-end gap-3 border-t md:border-t-0 pt-3 md:pt-0">
                 <div className="text-right">
                   <p className="text-base font-extrabold text-[#119C49] font-mono">{formatLKR(order.total_amount)}</p>
                   <span
                     className={`inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
                       order.payment_status === 'paid'
                         ? 'bg-[#D1F0DC] text-[#119C49]'
+                        : order.payment_status === 'voided' || order.payment_status === 'refunded'
+                        ? 'bg-red-100 text-red-700'
                         : 'bg-[#FEF3E2] text-[#F59E0B]'
                     }`}
                   >
                     {order.payment_status}
                   </span>
                 </div>
+
+                {order.payment_status !== 'voided' && order.payment_status !== 'refunded' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedOrderForVoid(order);
+                      setIsVoidModalOpen(true);
+                    }}
+                    className="rounded-xl border-[#EBECEF] text-red-600 hover:bg-red-50 hover:border-red-200 text-xs font-bold h-8 px-2.5 gap-1 transition"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>Void / Refund</span>
+                  </Button>
+                )}
               </div>
             </div>
           ))
         )}
       </div>
+
+      <VoidRefundModal
+        isOpen={isVoidModalOpen}
+        onClose={() => setIsVoidModalOpen(false)}
+        order={selectedOrderForVoid}
+        onSuccess={() => fetchOrders()}
+      />
     </div>
   );
 }

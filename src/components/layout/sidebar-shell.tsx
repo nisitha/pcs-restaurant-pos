@@ -21,6 +21,8 @@ import {
   Truck,
   Wallet,
   Settings,
+  Scale,
+  Boxes,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useShiftStore } from '@/stores/shift-store';
@@ -62,6 +64,9 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
     { href: '/orders', label: 'Orders & Delivery', icon: ClipboardList, roles: ['cashier', 'waiter', 'manager', 'owner', 'super_admin'] },
     { href: '/shifts', label: 'Accounting & Shifts', icon: Layers, roles: ['cashier', 'manager', 'owner', 'super_admin'] },
     { href: '/admin/dashboard', label: 'Analytics', icon: LayoutDashboard, roles: ['manager', 'owner', 'super_admin'] },
+    { href: '/admin/recipes', label: 'Recipes (BOM)', icon: Scale, roles: ['manager', 'owner', 'super_admin'] },
+    { href: '/admin/inventory', label: 'Inventory & Stock', icon: Boxes, roles: ['manager', 'owner', 'super_admin'] },
+    { href: '/admin/purchasing', label: 'Purchasing & GRN', icon: Truck, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/admin/menu', label: 'Menu Settings', icon: Settings, roles: ['manager', 'owner', 'super_admin'] },
   ];
 
