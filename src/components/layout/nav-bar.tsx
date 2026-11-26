@@ -18,6 +18,7 @@ import {
   Layers,
   Utensils,
   Grid3X3,
+  ClipboardList,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
@@ -50,6 +51,7 @@ export function NavBar() {
 
   const navLinks = [
     { href: '/pos', label: 'POS Billing', icon: MonitorCheck, roles: ['cashier', 'manager', 'owner', 'super_admin'] },
+    { href: '/orders', label: 'Orders', icon: ClipboardList, roles: ['cashier', 'waiter', 'manager', 'owner', 'super_admin'] },
     { href: '/tables', label: 'Floor Plan', icon: Grid3X3, roles: ['cashier', 'waiter', 'manager', 'owner', 'super_admin'] },
     { href: '/kds', label: 'Kitchen KDS', icon: ChefHat, roles: ['chef', 'manager', 'owner', 'super_admin'] },
     { href: '/waiter', label: 'Waiter Panel', icon: Smartphone, roles: ['waiter', 'manager', 'owner', 'super_admin'] },
