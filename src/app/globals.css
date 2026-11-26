@@ -66,3 +66,60 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Thermal Receipt Screen Guard */
+#thermal-print-root {
+  display: none;
+}
+
+/* Thermal Receipt Printing Isolation */
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+  
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Completely isolate thermal receipt: hide everything else under body */
+  body > *:not(#thermal-print-root) {
+    display: none !important;
+  }
+
+  #thermal-print-root {
+    display: block !important;
+    position: static !important;
+    margin: 0 auto !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Courier New', Courier, Consolas, Monaco, monospace !important;
+    box-sizing: border-box !important;
+  }
+
+  #thermal-print-root.paper-80mm {
+    width: 80mm !important;
+    max-width: 80mm !important;
+    padding: 4mm 3mm !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  #thermal-print-root.paper-58mm {
+    width: 58mm !important;
+    max-width: 58mm !important;
+    padding: 2mm 1.5mm !important;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+}
+
