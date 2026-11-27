@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { Printer, QrCode, X, Sparkles, Check, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DiningTable } from '@/types/table.types';
 
 interface QrTentCardsModalProps {
@@ -77,9 +77,9 @@ export function QrTentCardsModal({ isOpen, onClose, tables, selectedTable }: QrT
               <QrCode className="w-6 h-6 text-[#119C49]" />
               <span>Table QR Tent Cards</span>
             </DialogTitle>
-            <p className="text-sm text-[#7C828D] mt-1">
+            <DialogDescription className="text-sm text-[#7C828D] mt-1">
               Print QR tent cards for your dining tables so guests can scan and self-order directly.
-            </p>
+            </DialogDescription>
           </div>
           <div className="flex items-center gap-3 print:hidden">
             <select

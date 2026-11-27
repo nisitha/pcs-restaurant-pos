@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -67,29 +68,32 @@ export function TableEditDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <Plus className="w-5 h-5 text-amber-500" /> Add Dining Table
+      <DialogContent className="bg-white border-[#EBECEF] text-[#1A1D1F] sm:max-w-md rounded-3xl p-6 shadow-2xl">
+        <DialogHeader className="pr-10">
+          <DialogTitle className="text-xl font-black text-[#1A1D1F] tracking-tight flex items-center gap-2">
+            <Plus className="w-5 h-5 text-[#119C49]" /> Add Dining Table
           </DialogTitle>
+          <DialogDescription className="text-[#7C828D] text-xs">
+            Configure seating capacity and floor location for this dining table.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-lg">
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-2xl">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <div>
-            <label className="text-xs font-semibold text-zinc-300 block mb-1">
-              Floor Section <span className="text-rose-400">*</span>
+            <label className="text-xs font-bold text-[#1A1D1F] block mb-1.5">
+              Floor Section <span className="text-rose-500">*</span>
             </label>
             <select
               value={floorId}
               onChange={(e) => setFloorId(e.target.value)}
-              className="w-full h-9 rounded-md bg-zinc-900 border border-zinc-800 text-white text-xs px-3 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              className="w-full h-10 rounded-xl bg-[#F8F9FA] border border-[#EBECEF] text-[#1A1D1F] text-xs px-3 focus:outline-none focus:ring-1 focus:ring-[#119C49]"
               required
             >
               {floors.map((f) => (
@@ -101,20 +105,20 @@ export function TableEditDialog({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-zinc-300 block mb-1">
-              Table Identifier / Number <span className="text-rose-400">*</span>
+            <label className="text-xs font-bold text-[#1A1D1F] block mb-1.5">
+              Table Identifier / Number <span className="text-rose-500">*</span>
             </label>
             <Input
               value={tableNumber}
               onChange={(e) => setTableNumber(e.target.value)}
               placeholder="e.g. T9, VIP-1"
-              className="bg-zinc-900 border-zinc-800 text-white text-xs uppercase"
+              className="bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] text-xs uppercase h-10 rounded-xl focus-visible:ring-1 focus-visible:ring-[#119C49]"
               required
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-zinc-300 block mb-1">
+            <label className="text-xs font-bold text-[#1A1D1F] block mb-1.5">
               Seating Capacity (Guests)
             </label>
             <Input
@@ -123,25 +127,25 @@ export function TableEditDialog({
               max="30"
               value={seatingCapacity}
               onChange={(e) => setSeatingCapacity(e.target.value)}
-              className="bg-zinc-900 border-zinc-800 text-white text-xs font-semibold"
+              className="bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] text-xs font-bold h-10 rounded-xl focus-visible:ring-1 focus-visible:ring-[#119C49]"
               required
             />
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="pt-3 border-t border-[#EBECEF] flex sm:flex-row items-center justify-between gap-2">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="text-zinc-400 hover:text-white"
+              className="text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#F8F9FA] rounded-2xl h-11 px-5 font-semibold"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold"
+              className="bg-[#119C49] hover:bg-[#0E823D] text-white font-extrabold rounded-2xl h-11 px-6 shadow-sm flex-1 sm:flex-initial"
             >
               {isSubmitting ? 'Adding Table...' : 'Save Table'}
             </Button>

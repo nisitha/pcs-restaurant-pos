@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { OfflineQueuedOrder } from '@/types/phase4.types';
 
 const DB_NAME = 'pcs_pos_offline_db';
@@ -122,9 +122,16 @@ export async function syncQueuedOrders(): Promise<{ synced: number; failed: numb
 }
 
 export function useOfflineSync() {
-  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [isOnline, setIsOnline] = useState<boolean>(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  const pendingCountRef = useRef(pendingCount);
+  const isSyncingRef = useRef(isSyncing);
+  pendingCountRef.current = pendingCount;
+  isSyncingRef.current = isSyncing;
 
   const refreshCount = useCallback(async () => {
     const items = await getOfflineOrders();
@@ -132,7 +139,8 @@ export function useOfflineSync() {
   }, []);
 
   const triggerSync = useCallback(async () => {
-    if (!navigator.onLine || isSyncing) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+    if (isSyncingRef.current) return;
     setIsSyncing(true);
     try {
       await syncQueuedOrders();
@@ -140,10 +148,9 @@ export function useOfflineSync() {
     } finally {
       setIsSyncing(false);
     }
-  }, [isSyncing, refreshCount]);
+  }, [refreshCount]);
 
   useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
     refreshCount();
 
     const handleOnline = () => {
@@ -165,9 +172,9 @@ export function useOfflineSync() {
 
     // Periodic check / sync if online
     const interval = setInterval(() => {
-      if (navigator.onLine) {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
         refreshCount().then(() => {
-          if (pendingCount > 0 && !isSyncing) {
+          if (pendingCountRef.current > 0 && !isSyncingRef.current) {
             triggerSync();
           }
         });
@@ -180,7 +187,7 @@ export function useOfflineSync() {
       window.removeEventListener('pcs_offline_queue_updated', handleQueueUpdated);
       clearInterval(interval);
     };
-  }, [refreshCount, triggerSync, pendingCount, isSyncing]);
+  }, [refreshCount, triggerSync]);
 
   return {
     isOnline,

@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { formatLKR } from '@/lib/utils/currency';
@@ -92,16 +93,16 @@ export function VoidRefundModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md rounded-3xl bg-white border-[#EBECEF] p-6 shadow-2xl">
-        <DialogHeader>
+        <DialogHeader className="pr-10">
           <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-1">
             <ShieldAlert className="w-6 h-6" />
           </div>
           <DialogTitle className="text-xl font-extrabold text-[#1A1D1F]">
             Manager Void / Refund Control
           </DialogTitle>
-          <p className="text-xs text-[#7C828D]">
+          <DialogDescription className="text-xs text-[#7C828D]">
             Controlled workflow. Requires Manager or Owner PIN. Reverses deducted recipe ingredients back into stock.
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         {errorMessage && (

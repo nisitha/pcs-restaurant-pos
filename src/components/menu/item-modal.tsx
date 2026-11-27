@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -167,16 +168,19 @@ export function ItemModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <Plus className="w-5 h-5 text-amber-500" /> Add New Menu Item
+      <DialogContent className="bg-white border-[#EBECEF] text-[#1A1D1F] sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl">
+        <DialogHeader className="pr-10">
+          <DialogTitle className="text-xl font-black text-[#1A1D1F] tracking-tight flex items-center gap-2">
+            <Plus className="w-5 h-5 text-[#119C49]" /> Add New Menu Item
           </DialogTitle>
+          <DialogDescription className="text-xs text-[#7C828D]">
+            Create a new catalog item with pricing, station routing, and photo.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-lg">
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-2xl">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -184,26 +188,26 @@ export function ItemModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                Item Name <span className="text-rose-400">*</span>
+              <label className="text-xs font-bold text-[#1A1D1F] block mb-1">
+                Item Name <span className="text-rose-500">*</span>
               </label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Seafood Nasi Goreng"
-                className="bg-zinc-900 border-zinc-800 text-white text-xs"
+                className="bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] text-xs h-10 rounded-xl focus-visible:ring-1 focus-visible:ring-[#119C49]"
                 required
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                Category <span className="text-rose-400">*</span>
+              <label className="text-xs font-bold text-[#1A1D1F] block mb-1">
+                Category <span className="text-rose-500">*</span>
               </label>
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full h-9 rounded-md bg-zinc-900 border border-zinc-800 text-white text-xs px-3 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="w-full h-10 rounded-xl bg-[#F8F9FA] border border-[#EBECEF] text-[#1A1D1F] text-xs px-3 focus:outline-none focus:ring-1 focus:ring-[#119C49]"
                 required
               >
                 {categories.map((c) => (
@@ -215,11 +219,11 @@ export function ItemModal({
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                Base Price (LKR) <span className="text-rose-400">*</span>
+              <label className="text-xs font-bold text-[#1A1D1F] block mb-1">
+                Base Price (LKR) <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-2 text-xs font-bold text-zinc-500">Rs.</span>
+                <span className="absolute left-3 top-2.5 text-xs font-bold text-[#7C828D]">Rs.</span>
                 <Input
                   type="number"
                   step="0.01"
@@ -227,20 +231,20 @@ export function ItemModal({
                   value={basePrice}
                   onChange={(e) => setBasePrice(e.target.value)}
                   placeholder="1450.00"
-                  className="pl-10 bg-zinc-900 border-zinc-800 text-white text-xs font-semibold"
+                  className="pl-10 bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] text-xs font-bold h-10 rounded-xl focus-visible:ring-1 focus-visible:ring-[#119C49]"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1">
+              <label className="text-xs font-bold text-[#1A1D1F] block mb-1">
                 Kitchen Station Routing
               </label>
               <select
                 value={defaultStationId}
                 onChange={(e) => setDefaultStationId(e.target.value)}
-                className="w-full h-9 rounded-md bg-zinc-900 border border-zinc-800 text-white text-xs px-3 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="w-full h-10 rounded-xl bg-[#F8F9FA] border border-[#EBECEF] text-[#1A1D1F] text-xs px-3 focus:outline-none focus:ring-1 focus:ring-[#119C49]"
               >
                 {stations.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -252,7 +256,7 @@ export function ItemModal({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-zinc-300 block mb-1">
+            <label className="text-xs font-bold text-[#1A1D1F] block mb-1">
               Description (Optional)
             </label>
             <Textarea
@@ -260,16 +264,16 @@ export function ItemModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Key ingredients, allergens, preparation notes..."
               rows={2}
-              className="bg-zinc-900 border-zinc-800 text-white text-xs"
+              className="bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] placeholder:text-[#7C828D] text-xs rounded-xl focus-visible:ring-1 focus-visible:ring-[#119C49]"
             />
           </div>
 
           {/* Client-Side Compressed Image Upload */}
-          <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800">
-            <label className="text-xs font-semibold text-zinc-300 block mb-1.5 flex items-center justify-between">
+          <div className="p-4 rounded-2xl bg-[#F8F9FA] border border-[#EBECEF]">
+            <label className="text-xs font-bold text-[#1A1D1F] block mb-1.5 flex items-center justify-between">
               <span>Item Photo (Client Compressed WebP &lt; 100KB)</span>
               {compressedSizeKb !== null && (
-                <span className="text-emerald-400 text-[11px] font-mono flex items-center gap-1">
+                <span className="text-[#119C49] text-[11px] font-mono font-bold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" /> {compressedSizeKb} KB WebP
                 </span>
               )}
@@ -280,11 +284,11 @@ export function ItemModal({
                 <img
                   src={previewUrl}
                   alt="Preview"
-                  className="w-20 h-20 rounded-xl object-cover border border-zinc-700 shrink-0"
+                  className="w-20 h-20 rounded-2xl object-cover border border-[#EBECEF] shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-xl bg-zinc-800/80 border border-dashed border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
-                  <ImageIcon className="w-6 h-6" />
+                <div className="w-20 h-20 rounded-2xl bg-white border border-dashed border-[#EBECEF] flex items-center justify-center text-[#7C828D] shrink-0">
+                  <ImageIcon className="w-6 h-6 opacity-60" />
                 </div>
               )}
 
@@ -298,12 +302,12 @@ export function ItemModal({
                 />
                 <label
                   htmlFor="image-upload"
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium cursor-pointer transition"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#EBECEF] hover:bg-[#F0F2F5] text-[#1A1D1F] text-xs font-bold cursor-pointer transition shadow-xs"
                 >
-                  <Upload className="w-3.5 h-3.5" />
+                  <Upload className="w-3.5 h-3.5 text-[#119C49]" />
                   {isCompressing ? 'Compressing...' : 'Upload Image'}
                 </label>
-                <p className="text-[11px] text-zinc-500 mt-1">
+                <p className="text-[11px] text-[#7C828D] mt-1">
                   Automatic client compression to 600px WebP prevents database storage bloat.
                 </p>
               </div>
@@ -313,7 +317,7 @@ export function ItemModal({
           {/* Portion Variants Builder */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-zinc-300">
+              <label className="text-xs font-bold text-[#1A1D1F]">
                 Portion Variants / Sizes (Optional)
               </label>
               <Button
@@ -321,7 +325,7 @@ export function ItemModal({
                 variant="outline"
                 size="sm"
                 onClick={handleAddVariant}
-                className="h-7 text-[11px] bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white"
+                className="h-8 text-[11px] font-bold bg-[#F8F9FA] border-[#EBECEF] text-[#119C49] hover:bg-[#D1F0DC]/60 rounded-xl"
               >
                 <Plus className="w-3 h-3 mr-1" /> Add Variant
               </Button>
@@ -339,10 +343,10 @@ export function ItemModal({
                         updated[idx].variant_name = e.target.value;
                         setVariants(updated);
                       }}
-                      className="bg-zinc-900 border-zinc-800 text-white text-xs flex-1"
+                      className="bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] text-xs h-9 rounded-xl flex-1 focus-visible:ring-1 focus-visible:ring-[#119C49]"
                     />
                     <div className="relative w-32">
-                      <span className="absolute left-2.5 top-2 text-[10px] font-bold text-zinc-500">Rs.</span>
+                      <span className="absolute left-2.5 top-2 text-[10px] font-bold text-[#7C828D]">Rs.</span>
                       <Input
                         type="number"
                         step="0.01"
@@ -353,7 +357,7 @@ export function ItemModal({
                           updated[idx].price_override = e.target.value;
                           setVariants(updated);
                         }}
-                        className="pl-8 bg-zinc-900 border-zinc-800 text-white text-xs font-semibold"
+                        className="pl-8 bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] text-xs font-bold h-9 rounded-xl focus-visible:ring-1 focus-visible:ring-[#119C49]"
                       />
                     </div>
                     <Button
@@ -361,7 +365,7 @@ export function ItemModal({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveVariant(idx)}
-                      className="text-zinc-500 hover:text-rose-400 h-8 w-8 p-0"
+                      className="text-[#7C828D] hover:text-rose-600 hover:bg-rose-50 h-8 w-8 p-0 rounded-lg"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -371,20 +375,20 @@ export function ItemModal({
             )}
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="pt-3 border-t border-[#EBECEF] flex sm:flex-row items-center justify-between gap-2">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="text-zinc-400 hover:text-white"
+              className="text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#F8F9FA] rounded-2xl h-11 px-5 font-semibold"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting || isCompressing}
-              className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold"
+              className="bg-[#119C49] hover:bg-[#0E823D] text-white font-extrabold rounded-2xl h-11 px-6 shadow-sm flex-1 sm:flex-initial"
             >
               {isSubmitting ? 'Saving Item...' : 'Save & Add to Menu'}
             </Button>

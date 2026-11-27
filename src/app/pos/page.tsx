@@ -53,6 +53,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -1092,11 +1093,14 @@ export default function PosBillingPage() {
       {/* Manual Discount with Manager PIN check */}
       <Dialog open={isManualDiscountOpen} onOpenChange={setIsManualDiscountOpen}>
         <DialogContent className="max-w-sm rounded-3xl bg-white border-[#EBECEF] p-6 shadow-2xl">
-          <DialogHeader>
+          <DialogHeader className="pr-10">
             <DialogTitle className="text-xl font-extrabold text-[#1A1D1F] flex items-center gap-2">
               <Percent className="w-5 h-5 text-[#119C49]" />
               <span>Manual Order Discount</span>
             </DialogTitle>
+            <DialogDescription className="text-xs text-[#7C828D]">
+              Apply a fixed-amount promotional or courtesy discount to the cart total.
+            </DialogDescription>
           </DialogHeader>
 
           {managerPinError && (

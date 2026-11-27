@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -92,18 +93,24 @@ export function ItemCustomizerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <DialogTitle className="text-xl font-bold">{item.name}</DialogTitle>
-              {item.description && (
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{item.description}</p>
-              )}
+      <DialogContent className="bg-white border-[#EBECEF] text-[#1A1D1F] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl">
+        <DialogHeader className="pr-10">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-baseline justify-between gap-3">
+              <DialogTitle className="text-xl font-black text-[#1A1D1F] tracking-tight">{item.name}</DialogTitle>
+              <span className="text-lg font-black text-[#119C49] whitespace-nowrap">
+                {formatLKR(itemTotalPrice)}
+              </span>
             </div>
-            <span className="text-lg font-black text-amber-400 whitespace-nowrap">
-              {formatLKR(itemTotalPrice)}
-            </span>
+            {item.description ? (
+              <DialogDescription className="text-xs text-[#7C828D] leading-relaxed">
+                {item.description}
+              </DialogDescription>
+            ) : (
+              <DialogDescription className="text-xs text-[#7C828D]">
+                Customize your order options and portion size below.
+              </DialogDescription>
+            )}
           </div>
         </DialogHeader>
 
@@ -111,10 +118,10 @@ export function ItemCustomizerModal({
           {/* Portion Variants (Sizes) */}
           {item.variants && item.variants.length > 0 && (
             <div>
-              <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider block mb-2">
+              <label className="text-xs font-bold text-[#1A1D1F] uppercase tracking-wider block mb-2">
                 Select Portion Size
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 {item.variants.map((v) => {
                   const isSelected = selectedVariant?.id === v.id;
                   return (
@@ -122,17 +129,23 @@ export function ItemCustomizerModal({
                       key={v.id}
                       type="button"
                       onClick={() => setSelectedVariant(v)}
-                      className={`p-3 rounded-xl border text-left transition flex items-center justify-between ${
+                      className={`p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between ${
                         isSelected
-                          ? 'bg-amber-500/15 border-amber-500 text-white shadow-sm'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                          ? 'bg-[#D1F0DC]/60 border-2 border-[#119C49] text-[#119C49] font-bold shadow-xs'
+                          : 'bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] hover:bg-[#F0F2F5]'
                       }`}
                     >
                       <div>
                         <p className="font-bold text-xs">{v.variant_name}</p>
-                        <p className="text-[11px] text-zinc-400">{formatLKR(v.price_override)}</p>
+                        <p className={`text-[11px] ${isSelected ? 'text-[#119C49]/80 font-medium' : 'text-[#7C828D]'}`}>
+                          {formatLKR(v.price_override)}
+                        </p>
                       </div>
-                      {isSelected && <Check className="w-4 h-4 text-amber-400" />}
+                      {isSelected && (
+                        <div className="w-5 h-5 rounded-full bg-[#119C49] text-white flex items-center justify-center shrink-0">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -144,10 +157,10 @@ export function ItemCustomizerModal({
           {item.modifier_groups && item.modifier_groups.length > 0 && (
             <div className="space-y-4">
               {item.modifier_groups.map((group) => (
-                <div key={group.id} className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-zinc-200">{group.title}</span>
-                    <span className="text-[10px] text-zinc-400 font-mono">
+                <div key={group.id} className="p-4 rounded-2xl bg-[#F8F9FA] border border-[#EBECEF]">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-xs font-bold text-[#1A1D1F]">{group.title}</span>
+                    <span className="text-[11px] font-semibold text-[#7C828D] bg-white border border-[#EBECEF] px-2 py-0.5 rounded-full">
                       {group.max_selection === 1 ? 'Choose 1' : `Up to ${group.max_selection}`}
                     </span>
                   </div>
@@ -160,14 +173,21 @@ export function ItemCustomizerModal({
                           key={mod.id}
                           type="button"
                           onClick={() => handleToggleModifier(mod, group.max_selection)}
-                          className={`p-2.5 rounded-lg border text-left text-xs transition flex items-center justify-between ${
+                          className={`p-3 rounded-2xl border text-left text-xs transition-all flex items-center justify-between ${
                             isSelected
-                              ? 'bg-amber-500/15 border-amber-500 text-white font-semibold'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                              ? 'bg-[#D1F0DC]/60 border-2 border-[#119C49] text-[#119C49] font-bold shadow-xs'
+                              : 'bg-white border-[#EBECEF] text-[#1A1D1F] hover:bg-[#F0F2F5]'
                           }`}
                         >
-                          <span>{mod.name}</span>
-                          <span className="text-[11px] text-zinc-400 font-mono">
+                          <div className="flex items-center gap-2">
+                            {isSelected && (
+                              <div className="w-4 h-4 rounded-full bg-[#119C49] text-white flex items-center justify-center shrink-0">
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              </div>
+                            )}
+                            <span>{mod.name}</span>
+                          </div>
+                          <span className={`text-[11px] font-mono ${isSelected ? 'text-[#119C49] font-bold' : 'text-[#7C828D]'}`}>
                             {Number(mod.price_addition) > 0 ? `+${formatLKR(mod.price_addition)}` : 'Free'}
                           </span>
                         </button>
@@ -181,59 +201,62 @@ export function ItemCustomizerModal({
 
           {/* Special Preparation Instructions / Notes */}
           <div>
-            <label className="text-xs font-bold text-zinc-300 block mb-1.5">
+            <label className="text-xs font-bold text-[#1A1D1F] block mb-1.5">
               Kitchen Instructions / Item Notes
             </label>
             <Input
               value={itemNotes}
               onChange={(e) => setItemNotes(e.target.value)}
               placeholder="e.g. Less oil, no chili paste, extra crispy..."
-              className="bg-zinc-900 border-zinc-800 text-white text-xs"
+              className="bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] placeholder:text-[#7C828D] text-xs h-11 rounded-xl focus-visible:ring-1 focus-visible:ring-[#119C49]"
             />
           </div>
 
           {/* Quantity Stepper */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs font-bold text-zinc-300">Quantity</span>
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F8F9FA] border border-[#EBECEF]">
+            <div>
+              <span className="text-xs font-bold text-[#1A1D1F] block">Quantity</span>
+              <span className="text-[11px] text-[#7C828D]">Select number of portions</span>
+            </div>
             <div className="flex items-center gap-3">
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 p-0 bg-zinc-800 border-zinc-700 text-white text-base font-bold"
+                className="w-9 h-9 rounded-full bg-[#119C49] hover:bg-[#0E823D] active:scale-95 text-white flex items-center justify-center font-bold text-lg shadow-sm transition"
+                aria-label="Decrease quantity"
               >
                 -
-              </Button>
-              <span className="font-bold text-lg text-white font-mono min-w-6 text-center">{quantity}</span>
-              <Button
+              </button>
+              <span className="font-extrabold text-lg text-[#1A1D1F] font-mono min-w-8 text-center">
+                {quantity}
+              </span>
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={() => setQuantity(quantity + 1)}
-                className="w-8 h-8 p-0 bg-zinc-800 border-zinc-700 text-white text-base font-bold"
+                className="w-9 h-9 rounded-full bg-[#119C49] hover:bg-[#0E823D] active:scale-95 text-white flex items-center justify-center font-bold text-lg shadow-sm transition"
+                aria-label="Increase quantity"
               >
                 +
-              </Button>
+              </button>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="pt-3 border-t border-[#EBECEF] flex sm:flex-row items-center justify-between gap-3">
           <Button
             type="button"
             variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="text-zinc-400 hover:text-white"
+            className="rounded-2xl text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#F8F9FA] h-12 px-5 font-semibold"
           >
             Cancel
           </Button>
           <Button
             type="button"
             onClick={handleConfirm}
-            className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold gap-2"
+            className="bg-[#119C49] hover:bg-[#0E823D] active:scale-[0.99] text-white font-extrabold text-sm rounded-2xl h-12 px-6 shadow-sm gap-2 transition flex-1 sm:flex-initial"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Add to Cart ({formatLKR(itemTotalPrice)})</span>
           </Button>
         </DialogFooter>

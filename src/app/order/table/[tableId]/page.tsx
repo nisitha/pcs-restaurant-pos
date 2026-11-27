@@ -17,7 +17,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface MenuItem {
   id: string;
@@ -522,9 +522,9 @@ export default function TableSelfOrderPage({
               <ShoppingBag className="w-5 h-5 text-[#119C49]" />
               <span>Review Your Table Order</span>
             </DialogTitle>
-            <p className="text-xs text-[#7C828D]">
+            <DialogDescription className="text-xs text-[#7C828D]">
               Table {table?.table_number} • Direct routing to kitchen
-            </p>
+            </DialogDescription>
           </DialogHeader>
 
           {/* Cart Items */}
@@ -644,6 +644,9 @@ export default function TableSelfOrderPage({
             <DialogTitle className="text-lg font-black text-[#1A1D1F]">
               Customize {customizingItem?.name}
             </DialogTitle>
+            <DialogDescription className="text-xs text-[#7C828D]">
+              Select portion size and preferences for this item.
+            </DialogDescription>
           </DialogHeader>
 
           {/* Variants */}

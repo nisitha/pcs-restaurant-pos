@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Customer } from '@/types/crm.types';
@@ -120,7 +121,7 @@ export function CustomerPickerModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md rounded-3xl bg-white border-[#EBECEF] p-6 shadow-2xl">
-        <DialogHeader>
+        <DialogHeader className="pr-10">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-extrabold text-[#1A1D1F] flex items-center gap-2">
               <Users className="w-5 h-5 text-[#119C49]" />
@@ -145,6 +146,9 @@ export function CustomerPickerModal({
               )}
             </button>
           </div>
+          <DialogDescription className="text-xs text-[#7C828D]">
+            Search loyalty members by name or phone, or register a new customer profile.
+          </DialogDescription>
         </DialogHeader>
 
         {isQuickAdd ? (

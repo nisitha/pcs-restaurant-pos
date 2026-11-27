@@ -92,34 +92,34 @@ export function CashDrawerDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+      <DialogContent className="bg-white border-[#EBECEF] text-[#1A1D1F] sm:max-w-md rounded-3xl p-6 shadow-2xl">
+        <DialogHeader className="pr-10">
+          <DialogTitle className="text-xl font-black text-[#1A1D1F] tracking-tight flex items-center gap-2">
             {actionType === 'cash_in' ? (
-              <span className="text-emerald-400 flex items-center gap-1.5">
+              <span className="text-[#119C49] flex items-center gap-1.5">
                 <ArrowDownRight className="w-5 h-5" /> Cash In (Add to Drawer)
               </span>
             ) : (
-              <span className="text-rose-400 flex items-center gap-1.5">
+              <span className="text-rose-600 flex items-center gap-1.5">
                 <ArrowUpRight className="w-5 h-5" /> Cash Out (Payout / Drop)
               </span>
             )}
           </DialogTitle>
-          <DialogDescription className="text-zinc-400 text-xs">
+          <DialogDescription className="text-[#7C828D] text-xs">
             Record manual cash movements. Every transaction requires an authorized reason and is logged in the audit history.
           </DialogDescription>
         </DialogHeader>
 
         {/* Action Toggle */}
-        <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-900 rounded-xl border border-zinc-800 my-2">
+        <div className="grid grid-cols-2 gap-2 p-1.5 bg-[#F8F9FA] rounded-2xl border border-[#EBECEF] my-2">
           <Button
             type="button"
             variant="ghost"
             onClick={() => setActionType('cash_in')}
-            className={`text-xs font-semibold rounded-lg ${
+            className={`text-xs font-bold rounded-xl h-9 transition ${
               actionType === 'cash_in'
-                ? 'bg-emerald-600 text-white'
-                : 'text-zinc-400 hover:text-white'
+                ? 'bg-[#119C49] text-white shadow-xs'
+                : 'text-[#7C828D] hover:text-[#1A1D1F]'
             }`}
           >
             Cash In
@@ -128,10 +128,10 @@ export function CashDrawerDialog({
             type="button"
             variant="ghost"
             onClick={() => setActionType('cash_out')}
-            className={`text-xs font-semibold rounded-lg ${
+            className={`text-xs font-bold rounded-xl h-9 transition ${
               actionType === 'cash_out'
-                ? 'bg-rose-600 text-white'
-                : 'text-zinc-400 hover:text-white'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'text-[#7C828D] hover:text-[#1A1D1F]'
             }`}
           >
             Cash Out / Drop
@@ -140,18 +140,18 @@ export function CashDrawerDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-lg">
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-2xl">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <div>
-            <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+            <label className="text-xs font-bold text-[#1A1D1F] block mb-1.5">
               Amount (LKR)
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rs.</span>
+              <span className="absolute left-3.5 top-3.5 text-xs font-bold text-[#7C828D]">Rs.</span>
               <Input
                 type="number"
                 step="0.01"
@@ -159,15 +159,15 @@ export function CashDrawerDialog({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="1000.00"
-                className="pl-10 bg-zinc-900 border-zinc-800 text-white font-semibold text-lg"
+                className="pl-10 bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] font-black text-lg rounded-2xl h-12 focus-visible:ring-1 focus-visible:ring-[#119C49]"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
-              Mandatory Reason <span className="text-rose-400">*</span>
+            <label className="text-xs font-bold text-[#1A1D1F] block mb-1.5">
+              Mandatory Reason <span className="text-rose-500">*</span>
             </label>
             <Input
               type="text"
@@ -178,28 +178,28 @@ export function CashDrawerDialog({
                   ? 'e.g. Float addition, change coins replenished'
                   : 'e.g. Petty cash for vegetables, bank cash drop'
               }
-              className="bg-zinc-900 border-zinc-800 text-white text-xs"
+              className="bg-[#F8F9FA] border-[#EBECEF] text-[#1A1D1F] placeholder:text-[#7C828D] text-xs rounded-xl h-10 focus-visible:ring-1 focus-visible:ring-[#119C49]"
               required
             />
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="pt-3 border-t border-[#EBECEF] flex sm:flex-row items-center justify-between gap-2">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
-              className="text-zinc-400 hover:text-white"
+              className="text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#F8F9FA] rounded-2xl h-11 px-5 font-semibold"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className={`font-semibold text-white ${
+              className={`font-extrabold text-white rounded-2xl h-11 px-6 shadow-sm flex-1 sm:flex-initial transition ${
                 actionType === 'cash_in'
-                  ? 'bg-emerald-600 hover:bg-emerald-500'
-                  : 'bg-rose-600 hover:bg-rose-500'
+                  ? 'bg-[#119C49] hover:bg-[#0E823D]'
+                  : 'bg-rose-600 hover:bg-rose-700'
               }`}
             >
               {isLoading ? 'Processing...' : 'Confirm Transaction'}

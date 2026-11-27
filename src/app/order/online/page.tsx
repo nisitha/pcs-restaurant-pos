@@ -20,7 +20,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface MenuItem {
   id: string;
@@ -372,6 +372,9 @@ export default function OnlineOrderingPage() {
               <ShoppingBag className="w-5 h-5 text-[#119C49]" />
               <span>Checkout ({orderMode === 'delivery' ? 'Delivery' : 'Pickup'})</span>
             </DialogTitle>
+            <DialogDescription className="text-xs text-[#7C828D]">
+              Complete your contact details and address to submit your order.
+            </DialogDescription>
           </DialogHeader>
 
           {/* Cart Items */}
