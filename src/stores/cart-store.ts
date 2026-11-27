@@ -8,8 +8,14 @@ interface CartState {
   orderType: OrderType;
   tableId: string | null;
   tableNumber: string | null;
+  customerId: string | null;
   customerName: string;
   customerPhone: string;
+  customerTier: string | null;
+  customerLoyaltyPoints: number;
+  loyaltyPointsToRedeem: number;
+  activePromoId: string | null;
+  activePromoName: string | null;
   deliveryAddress: string;
   deliveryFee: number;
   discountAmount: number;
@@ -22,6 +28,9 @@ interface CartState {
   setOrderType: (type: OrderType) => void;
   setTable: (tableId: string | null, tableNumber: string | null) => void;
   setCustomer: (name: string, phone: string, address?: string) => void;
+  setCustomerDetails: (customer: { id: string; name: string; phone: string; tier?: string; loyalty_points?: number; delivery_address?: string | null } | null) => void;
+  setRedeemLoyaltyPoints: (points: number) => void;
+  setActivePromotion: (promoId: string | null, promoName: string | null, discount: number) => void;
   setDeliveryFee: (fee: number) => void;
   setDiscount: (amount: number, reason?: string) => void;
   setOrderNotes: (notes: string) => void;
@@ -46,8 +55,14 @@ export const useCartStore = create<CartState>()(
       orderType: 'dine_in',
       tableId: null,
       tableNumber: null,
+      customerId: null,
       customerName: '',
       customerPhone: '',
+      customerTier: null,
+      customerLoyaltyPoints: 0,
+      loyaltyPointsToRedeem: 0,
+      activePromoId: null,
+      activePromoName: null,
       deliveryAddress: '',
       deliveryFee: 0,
       discountAmount: 0,
@@ -69,6 +84,41 @@ export const useCartStore = create<CartState>()(
           customerName: name,
           customerPhone: phone,
           deliveryAddress: address,
+        });
+      },
+
+      setCustomerDetails: (customer) => {
+        if (!customer) {
+          set({
+            customerId: null,
+            customerName: '',
+            customerPhone: '',
+            customerTier: null,
+            customerLoyaltyPoints: 0,
+            loyaltyPointsToRedeem: 0,
+          });
+        } else {
+          set({
+            customerId: customer.id,
+            customerName: customer.name,
+            customerPhone: customer.phone,
+            customerTier: customer.tier || 'Regular',
+            customerLoyaltyPoints: customer.loyalty_points || 0,
+            deliveryAddress: customer.delivery_address || '',
+          });
+        }
+      },
+
+      setRedeemLoyaltyPoints: (points) => {
+        set({ loyaltyPointsToRedeem: Math.max(0, points) });
+      },
+
+      setActivePromotion: (promoId, promoName, discount) => {
+        set({
+          activePromoId: promoId,
+          activePromoName: promoName,
+          discountAmount: Math.max(0, discount),
+          discountReason: promoName || '',
         });
       },
 
@@ -154,8 +204,14 @@ export const useCartStore = create<CartState>()(
         set({
           tableId: null,
           tableNumber: null,
+          customerId: null,
           customerName: '',
           customerPhone: '',
+          customerTier: null,
+          customerLoyaltyPoints: 0,
+          loyaltyPointsToRedeem: 0,
+          activePromoId: null,
+          activePromoName: null,
           deliveryAddress: '',
           deliveryFee: 0,
           discountAmount: 0,
@@ -239,8 +295,8 @@ export const useCartStore = create<CartState>()(
       getTotal: () => {
         const subtotal = get().getSubtotal();
         const serviceCharge = get().getServiceCharge();
-        const { deliveryFee, discountAmount } = get();
-        const total = subtotal - discountAmount + serviceCharge + deliveryFee;
+        const { deliveryFee, discountAmount, loyaltyPointsToRedeem } = get();
+        const total = subtotal - discountAmount - (loyaltyPointsToRedeem || 0) + serviceCharge + deliveryFee;
         return Number(Math.max(0, total).toFixed(2));
       },
     }),

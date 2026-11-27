@@ -45,6 +45,16 @@ import { ItemCustomizerModal } from '@/components/pos/item-customizer-modal';
 import { TablePickerModal } from '@/components/pos/table-picker-modal';
 import { HoldOrdersModal } from '@/components/pos/hold-orders-modal';
 import { PaymentSuccessModal } from '@/components/pos/payment-success-modal';
+import { CustomerPickerModal } from '@/components/pos/customer-picker-modal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Users, Award, Tag, Lock, ShieldCheck, Percent } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function PosBillingPage() {
@@ -57,8 +67,14 @@ export default function PosBillingPage() {
     orderType,
     tableId,
     tableNumber,
+    customerId,
     customerName,
     customerPhone,
+    customerTier,
+    customerLoyaltyPoints,
+    loyaltyPointsToRedeem,
+    activePromoId,
+    activePromoName,
     deliveryAddress,
     deliveryFee,
     discountAmount,
@@ -69,6 +85,9 @@ export default function PosBillingPage() {
     setOrderType,
     setTable,
     setCustomer,
+    setCustomerDetails,
+    setRedeemLoyaltyPoints,
+    setActivePromotion,
     setDeliveryFee,
     setDiscount,
     setOrderNotes,
@@ -88,6 +107,12 @@ export default function PosBillingPage() {
   const [isTablePickerOpen, setIsTablePickerOpen] = useState(false);
   const [isHoldOrdersOpen, setIsHoldOrdersOpen] = useState(false);
   const [isPaymentSuccessOpen, setIsPaymentSuccessOpen] = useState(false);
+  const [isCustomerPickerOpen, setIsCustomerPickerOpen] = useState(false);
+  const [isManualDiscountOpen, setIsManualDiscountOpen] = useState(false);
+  const [manualDiscountInput, setManualDiscountInput] = useState<number>(0);
+  const [manualDiscountReason, setManualDiscountReason] = useState<string>('Cashier Courtesy');
+  const [managerPinInput, setManagerPinInput] = useState<string>('');
+  const [managerPinError, setManagerPinError] = useState<string | null>(null);
 
   // Payment state
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'credit_card' | 'qr_payment'>('cash');
@@ -233,6 +258,67 @@ export default function PosBillingPage() {
     updateItemQuantity(cartItem.cart_item_id, cartItem.quantity - 1);
   };
 
+  // Auto-evaluate Happy-Hour and Combo Promotions
+  useEffect(() => {
+    const evaluatePromos = async () => {
+      if (cartItems.length === 0) {
+        if (activePromoId) setActivePromotion(null, null, 0);
+        return;
+      }
+      try {
+        const res = await fetch('/api/promotions/evaluate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: cartItems.map((i) => {
+              const menuItem = items.find((mi) => mi.id === i.menu_item_id);
+              return {
+                menu_item_id: i.menu_item_id,
+                quantity: i.quantity,
+                unit_price: i.unit_price,
+                category_id: menuItem?.category_id || undefined,
+              };
+            }),
+            subtotal: getSubtotal(),
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.discounts && data.discounts.length > 0) {
+          const topPromo = data.discounts[0];
+          setActivePromotion(topPromo.promotion_id, topPromo.name, data.total_discount);
+        }
+      } catch (err) {
+        console.error('Failed to auto-evaluate promotions', err);
+      }
+    };
+    evaluatePromos();
+  }, [cartItems]);
+
+  // Apply manual discount with role authorization check
+  const handleApplyManualDiscount = () => {
+    const sub = getSubtotal();
+    const discountVal = Number(manualDiscountInput);
+    if (discountVal <= 0) {
+      setDiscount(0, '');
+      setIsManualDiscountOpen(false);
+      return;
+    }
+
+    const discountRatio = sub > 0 ? (discountVal / sub) : 0;
+    // If discount exceeds 10%, require Manager (2222) or Owner (1111) PIN
+    if (discountRatio > 0.10) {
+      if (managerPinInput !== '2222' && managerPinInput !== '1111') {
+        setManagerPinError('Discounts over 10% require Manager (2222) or Owner (1111) PIN authorization');
+        return;
+      }
+    }
+
+    setDiscount(discountVal, manualDiscountReason || 'Manual Cashier Discount');
+    setIsManualDiscountOpen(false);
+    setManagerPinError(null);
+    setManagerPinInput('');
+  };
+
   // Submit Order & Settle Payment
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) return;
@@ -256,12 +342,17 @@ export default function PosBillingPage() {
         shiftId,
         orderType,
         tableId: orderType === 'dine_in' ? tableId : undefined,
+        customerId: customerId || undefined,
         customerName: customerName || undefined,
         customerPhone: customerPhone || undefined,
         deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
         deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
-        discountAmount,
-        discountReason: discountReason || undefined,
+        discountAmount: discountAmount + (loyaltyPointsToRedeem || 0),
+        discountReason: loyaltyPointsToRedeem > 0
+          ? `${discountReason ? discountReason + ' + ' : ''}Redeemed ${loyaltyPointsToRedeem} pts`
+          : (discountReason || undefined),
+        loyaltyPointsRedeemed: loyaltyPointsToRedeem || 0,
+        promotionId: activePromoId || undefined,
         notes: orderNotes || undefined,
         idempotencyKey: crypto.randomUUID(),
         items: cartItems.map((item) => ({
@@ -694,6 +785,44 @@ export default function PosBillingPage() {
           </div>
         </div>
 
+        {/* Customer / Loyalty Picker Bar */}
+        <div className="px-4 py-1.5 border-b border-[#F4F5F7]">
+          {customerId ? (
+            <div className="p-2.5 rounded-2xl bg-[#D1F0DC]/40 border border-[#119C49]/40 flex items-center justify-between">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <div className="w-7 h-7 rounded-full bg-[#119C49] text-white flex items-center justify-center shrink-0">
+                  <Users className="w-3.5 h-3.5" />
+                </div>
+                <div className="leading-tight truncate">
+                  <span className="font-extrabold text-xs text-[#1A1D1F] block truncate">
+                    {customerName}
+                  </span>
+                  <span className="text-[10px] text-[#119C49] font-bold">
+                    {customerTier} &bull; {customerLoyaltyPoints} Pts
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsCustomerPickerOpen(true)}
+                className="text-[11px] font-bold text-[#119C49] hover:underline shrink-0 ml-2"
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsCustomerPickerOpen(true)}
+              className="w-full py-2 px-3 rounded-2xl bg-[#F6F7F9] hover:bg-white border border-dashed border-[#EBECEF] hover:border-[#119C49] text-xs font-bold text-[#7C828D] hover:text-[#119C49] flex items-center justify-center gap-1.5 transition"
+            >
+              <Users className="w-3.5 h-3.5 text-[#119C49]" />
+              <span>+ Attach Customer (Loyalty)</span>
+            </button>
+          )}
+        </div>
+
         {/* Cart Items List */}
         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2.5 scrollbar-none">
           {cartItems.length === 0 ? (
@@ -747,12 +876,74 @@ export default function PosBillingPage() {
               <span>Sub Total</span>
               <span className="font-bold text-[#1A1D1F] font-mono">{formatLKR(subtotal)}</span>
             </div>
+
+            {/* Promotion Discount */}
+            {discountAmount > 0 && (
+              <div className="flex items-center justify-between text-[#119C49]">
+                <span className="flex items-center gap-1 font-semibold truncate max-w-[200px]">
+                  <Tag className="w-3.5 h-3.5 shrink-0" /> {discountReason || 'Promo Discount'}
+                </span>
+                <span className="font-bold font-mono shrink-0">-{formatLKR(discountAmount)}</span>
+              </div>
+            )}
+
+            {/* Loyalty Points Redemption Toggle */}
+            {customerId && customerLoyaltyPoints > 0 && (
+              <div className="p-2 rounded-xl bg-[#FEF3E2] border border-[#F59E0B]/30 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs text-[#1A1D1F]">
+                  <Award className="w-3.5 h-3.5 text-[#F59E0B]" />
+                  <span className="font-bold">Redeem Points</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (loyaltyPointsToRedeem > 0) {
+                      setRedeemLoyaltyPoints(0);
+                    } else {
+                      setRedeemLoyaltyPoints(Math.min(customerLoyaltyPoints, Math.floor(subtotal)));
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition font-mono ${
+                    loyaltyPointsToRedeem > 0
+                      ? 'bg-[#119C49] text-white shadow-sm'
+                      : 'bg-white text-[#F59E0B] border border-[#F59E0B]/40'
+                  }`}
+                >
+                  {loyaltyPointsToRedeem > 0
+                    ? `-${formatLKR(loyaltyPointsToRedeem)} (Active)`
+                    : `Apply (${customerLoyaltyPoints} Pts)`}
+                </button>
+              </div>
+            )}
+
             {orderType === 'dine_in' && (
               <div className="flex items-center justify-between text-[#7C828D]">
                 <span>Service Charge (10%)</span>
                 <span className="font-bold text-[#1A1D1F] font-mono">{formatLKR(serviceCharge)}</span>
               </div>
             )}
+
+            {/* Manual Discount Trigger */}
+            <div className="flex items-center justify-between pt-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setManualDiscountInput(discountAmount > 0 && !activePromoId ? discountAmount : 0);
+                  setManagerPinError(null);
+                  setManagerPinInput('');
+                  setIsManualDiscountOpen(true);
+                }}
+                className="text-[11px] font-bold text-[#7C828D] hover:text-[#119C49] flex items-center gap-1"
+              >
+                <Percent className="w-3 h-3" />
+                <span>
+                  {discountAmount > 0 && !activePromoId
+                    ? 'Edit Manual Discount'
+                    : '+ Add Manual Discount'}
+                </span>
+              </button>
+            </div>
+
             <div className="pt-2 border-t border-[#EBECEF] flex items-center justify-between text-sm font-extrabold text-[#1A1D1F]">
               <span>Total Amount</span>
               <span className="text-base text-[#119C49] font-mono">{formatLKR(total)}</span>
@@ -857,6 +1048,110 @@ export default function PosBillingPage() {
           clearCart();
         }}
       />
+
+      <CustomerPickerModal
+        isOpen={isCustomerPickerOpen}
+        onClose={() => setIsCustomerPickerOpen(false)}
+        selectedCustomerId={customerId}
+        onSelectCustomer={(cust) => {
+          setCustomerDetails(cust);
+          if (cust && cust.loyalty_points > 0) {
+            // By default don't auto-redeem, cashier can toggle
+            setRedeemLoyaltyPoints(0);
+          }
+        }}
+      />
+
+      {/* Manual Discount with Manager PIN check */}
+      <Dialog open={isManualDiscountOpen} onOpenChange={setIsManualDiscountOpen}>
+        <DialogContent className="max-w-sm rounded-3xl bg-white border-[#EBECEF] p-6 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-extrabold text-[#1A1D1F] flex items-center gap-2">
+              <Percent className="w-5 h-5 text-[#119C49]" />
+              <span>Manual Order Discount</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {managerPinError && (
+            <div className="p-3 rounded-2xl bg-red-50 text-red-600 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{managerPinError}</span>
+            </div>
+          )}
+
+          <div className="space-y-3 py-2 text-xs">
+            <div>
+              <label className="font-bold text-[#1A1D1F] block mb-1">
+                Discount Amount (LKR)
+              </label>
+              <Input
+                type="number"
+                step="10"
+                min="0"
+                value={manualDiscountInput}
+                onChange={(e) => {
+                  setManualDiscountInput(parseFloat(e.target.value) || 0);
+                  setManagerPinError(null);
+                }}
+                className="h-10 rounded-2xl font-mono text-sm font-bold"
+              />
+              <span className="text-[10px] text-[#7C828D] block mt-1">
+                Subtotal: {formatLKR(getSubtotal())} &bull; Max 10% without Manager PIN: {formatLKR(getSubtotal() * 0.1)}
+              </span>
+            </div>
+
+            <div>
+              <label className="font-bold text-[#1A1D1F] block mb-1">Reason / Note</label>
+              <Input
+                type="text"
+                placeholder="Cashier courtesy, owner guest, VIP discount"
+                value={manualDiscountReason}
+                onChange={(e) => setManualDiscountReason(e.target.value)}
+                className="h-10 rounded-2xl"
+              />
+            </div>
+
+            {/* If discount > 10%, prompt for Manager PIN */}
+            {getSubtotal() > 0 && (manualDiscountInput / getSubtotal()) > 0.10 && (
+              <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 space-y-2">
+                <label className="font-bold text-red-700 block flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Manager Authorization Required (&gt; 10%)</span>
+                </label>
+                <Input
+                  type="password"
+                  maxLength={4}
+                  placeholder="••••"
+                  value={managerPinInput}
+                  onChange={(e) => setManagerPinInput(e.target.value)}
+                  className="h-11 rounded-2xl text-center text-lg font-mono tracking-widest bg-white"
+                />
+                <p className="text-[10px] text-red-600 text-center">
+                  Enter Manager (2222) or Owner (1111) PIN
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsManualDiscountOpen(false)}
+              className="rounded-2xl"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleApplyManualDiscount}
+              className="rounded-2xl bg-[#119C49] hover:bg-[#0E853E] text-white font-bold"
+            >
+              Apply Discount
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

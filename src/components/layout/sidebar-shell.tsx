@@ -23,6 +23,9 @@ import {
   Settings,
   Scale,
   Boxes,
+  Users,
+  Tag,
+  BarChart3,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useShiftStore } from '@/stores/shift-store';
@@ -67,6 +70,9 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
     { href: '/admin/recipes', label: 'Recipes (BOM)', icon: Scale, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/admin/inventory', label: 'Inventory & Stock', icon: Boxes, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/admin/purchasing', label: 'Purchasing & GRN', icon: Truck, roles: ['manager', 'owner', 'super_admin'] },
+    { href: '/admin/customers', label: 'Customers & CRM', icon: Users, roles: ['cashier', 'waiter', 'manager', 'owner', 'super_admin'] },
+    { href: '/admin/promotions', label: 'Promotions & Combos', icon: Tag, roles: ['manager', 'owner', 'super_admin'] },
+    { href: '/admin/reports', label: 'BI Reports', icon: BarChart3, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/admin/menu', label: 'Menu Settings', icon: Settings, roles: ['manager', 'owner', 'super_admin'] },
   ];
 

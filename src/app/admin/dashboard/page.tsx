@@ -9,6 +9,9 @@ import {
   Scale,
   Boxes,
   Truck,
+  Users,
+  Tag,
+  BarChart3,
   ArrowUpRight,
   ShieldCheck,
   RefreshCw,
@@ -216,6 +219,54 @@ export default function AdminDashboardPage() {
           </h3>
           <p className="text-xs text-[#7C828D]">
             Manage supplier catalogs, create purchase orders, and receive goods to auto-increment stock levels.
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/customers"
+          className="p-6 rounded-3xl bg-white border border-[#EBECEF] shadow-sm hover:shadow-md transition group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-[#D1F0DC] text-[#119C49] flex items-center justify-center mb-3 group-hover:scale-105 transition">
+            <Users className="w-6 h-6" />
+          </div>
+          <h3 className="font-extrabold text-[#1A1D1F] text-base mb-1 flex items-center justify-between">
+            <span>Customer CRM & Loyalty</span>
+            <ArrowUpRight className="w-4 h-4 text-[#7C828D] group-hover:text-[#119C49] transition" />
+          </h3>
+          <p className="text-xs text-[#7C828D]">
+            Guest profiles, VIP/Corporate tiers, and automated 1 pt / Rs. 100 loyalty point balances.
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/promotions"
+          className="p-6 rounded-3xl bg-white border border-[#EBECEF] shadow-sm hover:shadow-md transition group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-[#FEF3E2] text-[#F59E0B] flex items-center justify-center mb-3 group-hover:scale-105 transition">
+            <Tag className="w-6 h-6" />
+          </div>
+          <h3 className="font-extrabold text-[#1A1D1F] text-base mb-1 flex items-center justify-between">
+            <span>Promotions & Happy Hour</span>
+            <ArrowUpRight className="w-4 h-4 text-[#7C828D] group-hover:text-[#F59E0B] transition" />
+          </h3>
+          <p className="text-xs text-[#7C828D]">
+            Configure scheduled time-based Happy-Hour rules, promo codes, and combo meal bundles.
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/reports"
+          className="p-6 rounded-3xl bg-white border border-[#EBECEF] shadow-sm hover:shadow-md transition group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-[#D1F0DC] text-[#119C49] flex items-center justify-center mb-3 group-hover:scale-105 transition">
+            <BarChart3 className="w-6 h-6" />
+          </div>
+          <h3 className="font-extrabold text-[#1A1D1F] text-base mb-1 flex items-center justify-between">
+            <span>Advanced BI & Reports</span>
+            <ArrowUpRight className="w-4 h-4 text-[#7C828D] group-hover:text-[#119C49] transition" />
+          </h3>
+          <p className="text-xs text-[#7C828D]">
+            Comprehensive financial P&L, recipe COGS vs actual wastage, tender audits, and staff/KDS metrics.
           </p>
         </Link>
       </div>

@@ -144,6 +144,18 @@ export async function POST(request: Request) {
     });
 
     if (!rpcError && rpcData && rpcData.success) {
+      // Update Customer & Loyalty metadata if present
+      if (body.customerId || body.loyaltyPointsRedeemed || body.promotionId) {
+        await supabase
+          .from('orders')
+          .update({
+            customer_id: body.customerId || null,
+            loyalty_points_redeemed: Number(body.loyaltyPointsRedeemed || 0),
+            promotion_id: body.promotionId || null,
+          })
+          .eq('id', rpcData.order_id);
+      }
+
       return NextResponse.json({
         success: true,
         orderId: rpcData.order_id,
@@ -177,6 +189,9 @@ export async function POST(request: Request) {
         order_number: orderNumber,
         order_type: orderType,
         table_id: tableId || null,
+        customer_id: body.customerId || null,
+        loyalty_points_redeemed: Number(body.loyaltyPointsRedeemed || 0),
+        promotion_id: body.promotionId || null,
         cashier_id: cashierId,
         shift_id: shiftId || null,
         kds_status: 'submitted',
