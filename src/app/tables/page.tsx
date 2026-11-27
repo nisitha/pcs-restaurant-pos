@@ -14,6 +14,7 @@ import {
   Layers,
   ChevronRight,
   UserCheck,
+  QrCode,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTableStore } from '@/stores/table-store';
@@ -21,6 +22,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useCartStore } from '@/stores/cart-store';
 import { TableStatus } from '@/types/table.types';
 import { createClient } from '@/lib/supabase/client';
+import { QrTentCardsModal } from '@/components/tables/qr-tent-cards-modal';
 
 export default function TablesFloorPlanPage() {
   const router = useRouter();
@@ -30,6 +32,7 @@ export default function TablesFloorPlanPage() {
 
   const [activeFloor, setActiveFloor] = useState<'first' | 'second' | 'third'>('first');
   const [selectedTableId, setSelectedTableId] = useState<string>('');
+  const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
 
   // Booking Form State
   const [guestName, setGuestName] = useState<string>('Robert Fox');
@@ -163,6 +166,14 @@ export default function TablesFloorPlanPage() {
           </div>
 
           <div className="flex items-center gap-2 text-xs font-bold">
+            <Button
+              type="button"
+              onClick={() => setIsQrModalOpen(true)}
+              className="h-8 px-3 rounded-full bg-[#119C49] hover:bg-[#0E823D] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>QR Tent Cards</span>
+            </Button>
             <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#EBECEF] text-[#119C49]">
               <span className="w-2.5 h-2.5 rounded-full bg-[#119C49]" /> Available
             </span>
@@ -412,6 +423,14 @@ export default function TablesFloorPlanPage() {
           </Button>
         </div>
       </aside>
+
+      {/* QR Tent Cards Print Modal */}
+      <QrTentCardsModal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        tables={tables}
+        selectedTable={selectedTable}
+      />
     </div>
   );
 }

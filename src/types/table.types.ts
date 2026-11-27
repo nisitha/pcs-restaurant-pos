@@ -13,6 +13,8 @@ export interface DiningTable {
   floor_id: string;
   table_number: string;
   seating_capacity: number;
+  capacity?: number;
+  section?: string | null;
   status: TableStatus;
   current_order_id?: string | null;
   pos_x: number;

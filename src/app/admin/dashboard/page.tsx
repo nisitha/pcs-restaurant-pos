@@ -12,6 +12,8 @@ import {
   Users,
   Tag,
   BarChart3,
+  Building2,
+  Bike,
   ArrowUpRight,
   ShieldCheck,
   RefreshCw,
@@ -267,6 +269,38 @@ export default function AdminDashboardPage() {
           </h3>
           <p className="text-xs text-[#7C828D]">
             Comprehensive financial P&L, recipe COGS vs actual wastage, tender audits, and staff/KDS metrics.
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/delivery"
+          className="p-6 rounded-3xl bg-white border border-[#EBECEF] shadow-sm hover:shadow-md transition group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center mb-3 group-hover:scale-105 transition">
+            <Bike className="w-6 h-6" />
+          </div>
+          <h3 className="font-extrabold text-[#1A1D1F] text-base mb-1 flex items-center justify-between">
+            <span>Delivery & Rider Fleet</span>
+            <ArrowUpRight className="w-4 h-4 text-[#7C828D] group-hover:text-[#0284C7] transition" />
+          </h3>
+          <p className="text-xs text-[#7C828D]">
+            Dispatch online and phone orders to delivery riders, track vehicle fleets, and manage delivery statuses.
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/branches"
+          className="p-6 rounded-3xl bg-white border border-[#EBECEF] shadow-sm hover:shadow-md transition group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-[#D1F0DC] text-[#119C49] flex items-center justify-center mb-3 group-hover:scale-105 transition">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <h3 className="font-extrabold text-[#1A1D1F] text-base mb-1 flex items-center justify-between">
+            <span>Multi-Branch & Transfers</span>
+            <ArrowUpRight className="w-4 h-4 text-[#7C828D] group-hover:text-[#119C49] transition" />
+          </h3>
+          <p className="text-xs text-[#7C828D]">
+            Manage multiple restaurant locations and execute atomic inter-branch ingredient inventory transfers.
           </p>
         </Link>
       </div>

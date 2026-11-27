@@ -1,68 +1,53 @@
-# Supabase Setup Guide for PCS Restaurant POS
+# Supabase Setup & Automated Backup Guide
 
-Follow these steps to connect your Supabase project to the local application.
-
----
-
-## 1. Create or Open Your Supabase Project
-1. Log in to [Supabase Dashboard](https://supabase.com/dashboard).
-2. Create a new project (e.g. `pcs-restaurant-pos`) or select an existing project.
-3. Choose a strong database password and select the region closest to your users (e.g., `Singapore (ap-southeast-1)` or `Mumbai (ap-south-1)`).
+This document describes how to configure the Supabase PostgreSQL connection string for daily automated database backups, disaster recovery, and keep-alive pings to prevent the Supabase Free Tier project from pausing.
 
 ---
 
-## 2. Execute the Database Migration
-1. In the Supabase Dashboard sidebar, click **SQL Editor**.
-2. Click **New query**.
-3. Open `supabase/migrations/001_initial_schema.sql` from this repository.
-4. Copy the entire file content and paste it into the Supabase SQL Editor.
-5. Click **Run** (or `Ctrl + Enter`).
-6. Verify that all tables, enums, stored procedures, RLS policies, and default seed records (`MAIN-BRANCH`, default kitchen stations, inventory units, dining tables) are created.
+## 1. Retrieve the Supabase Database Connection URI
 
----
-
-## 3. Configure Local Environment Variables
-1. In the root of this repository, create a local file named `.env.local` (this file is git-ignored):
-   ```bash
-   cp .env.example .env.local
+1. Log into your [Supabase Dashboard](https://supabase.com/dashboard).
+2. Open your project: **`tcmdqcsqpozdqxlvriqy`**.
+3. In the left navigation, click on **Project Settings** (gear icon) > **Database**.
+4. Scroll down to the **Connection string** section.
+5. Select the **URI** tab (or **Session mode / Direct connection**):
+   ```text
+   postgresql://postgres:[YOUR-PASSWORD]@db.tcmdqcsqpozdqxlvriqy.supabase.co:5432/postgres
    ```
-2. In your Supabase Dashboard, go to **Project Settings** (gear icon) -> **API**.
-3. Copy the **Project URL** and paste it into `.env.local`:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-   ```
-4. Copy the **anon public** API key and paste it into `.env.local`:
-   ```env
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
-   ```
-5. Copy the **service_role secret** API key and paste it into `.env.local`:
-   ```env
-   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
-   ```
+6. Replace `[YOUR-PASSWORD]` with the database password you created when the Supabase project was initialized.
 
 ---
 
-## 4. Enable Supabase Storage Bucket for Menu Images
-1. In your Supabase Dashboard sidebar, navigate to **Storage**.
-2. Click **New bucket**.
-3. Set the Bucket name to `menu-assets`.
-4. Enable **Public bucket** toggle (so menu images can be displayed on POS/KDS without token expiration).
-5. Click **Save bucket**.
+## 2. Configure GitHub Secrets (1-Minute Setup)
+
+1. Navigate to your GitHub repository: **`https://github.com/nisitha/pcs-restaurant-pos`**.
+2. Click on **Settings** > **Secrets and variables** > **Actions**.
+3. Click the green **New repository secret** button.
+4. Set:
+   - **Name:** `SUPABASE_DB_URL`
+   - **Secret:** `postgresql://postgres:[YOUR-PASSWORD]@db.tcmdqcsqpozdqxlvriqy.supabase.co:5432/postgres`
+5. Click **Add secret**.
 
 ---
 
-## 5. Enable Supabase Realtime for KDS & Orders
-1. In your Supabase Dashboard sidebar, navigate to **Database** -> **Replication** (or **Realtime**).
-2. Ensure Realtime is enabled for the following tables:
-   - `station_routing_tickets`
-   - `orders`
-   - `dining_tables`
+## 3. How the Daily Backup & Keep-Alive Works
+
+The workflow located in [`.github/workflows/supabase-backup.yml`](../.github/workflows/supabase-backup.yml):
+- **Schedule:** Runs every night at `02:00 UTC` (`07:30 AM Sri Lanka Time`).
+- **Keep-Alive:** Executes a `SELECT NOW()` query against Supabase, ensuring the Free Tier project stays active and never pauses due to 7 days of inactivity.
+- **pg_dump:** Creates a complete schema + table data snapshot, compresses it with `gzip -9`, and uploads the artifact with **30-day retention** on GitHub.
+- **Manual Trigger:** Can also be triggered anytime via **Actions** > **Daily Supabase Backup & Keep-Alive** > **Run workflow**.
 
 ---
 
-## 6. Verify Connection
-Run the Next.js development server:
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+## 4. Database Migrations Execution Order
+
+Run the following SQL migrations in your Supabase SQL Editor in sequence:
+
+1. `supabase/migrations/001_initial_schema.sql` (Core DB schema, tables, ENUMs)
+2. `supabase/migrations/002_seed_data.sql` (Colombo branch, staff PINs, stations, sample menu)
+3. `supabase/migrations/003_storage_policies.sql` (Supabase Storage bucket `menu-images`)
+4. `supabase/migrations/004_order_routing_and_realtime.sql` (Order routing RPC, KDS realtime publication)
+5. `supabase/migrations/006_inventory_and_recipes.sql` (Inventory BOM, recipes, GRN, wastage, void/refunds)
+6. `supabase/migrations/007_customers_loyalty_promotions.sql` (CRM loyalty points, happy hour promotions, BI reporting)
+7. `supabase/migrations/008_phase4_expansion.sql` (Multi-branch, inter-branch transfers, delivery riders, table QR ordering)

@@ -104,6 +104,8 @@ export async function POST(request: Request) {
       cashierId,
       shiftId,
       orderType = 'dine_in',
+      orderSource = 'pos',
+      requiresStaffApproval = false,
       tableId,
       customerName,
       customerPhone,
@@ -116,9 +118,17 @@ export async function POST(request: Request) {
       items = [],
     } = body;
 
-    if (!cashierId || !items || items.length === 0) {
+    if (!items || items.length === 0) {
       return NextResponse.json(
-        { success: false, message: 'Cashier ID and ordered items are required.' },
+        { success: false, message: 'Ordered items are required.' },
+        { status: 400 }
+      );
+    }
+
+    const isSelfOrder = orderSource === 'table_qr' || orderSource === 'online_web';
+    if (!cashierId && !isSelfOrder) {
+      return NextResponse.json(
+        { success: false, message: 'Cashier ID is required for POS/Waiter orders.' },
         { status: 400 }
       );
     }
@@ -128,7 +138,7 @@ export async function POST(request: Request) {
     // 1. Try calling the atomic PostgreSQL RPC function
     const { data: rpcData, error: rpcError } = await supabase.rpc('submit_pos_order', {
       p_branch_id: branchId,
-      p_cashier_id: cashierId,
+      p_cashier_id: cashierId || null,
       p_shift_id: shiftId || null,
       p_order_type: orderType,
       p_table_id: tableId || null,
@@ -141,6 +151,8 @@ export async function POST(request: Request) {
       p_notes: notes?.trim() || null,
       p_idempotency_key: idempotencyKey,
       p_items: items,
+      p_order_source: orderSource,
+      p_requires_staff_approval: Boolean(requiresStaffApproval),
     });
 
     if (!rpcError && rpcData && rpcData.success) {
@@ -188,13 +200,19 @@ export async function POST(request: Request) {
         branch_id: branchId,
         order_number: orderNumber,
         order_type: orderType,
+        order_source: orderSource || 'pos',
+        requires_staff_approval: Boolean(requiresStaffApproval),
+        customer_name: customerName || null,
+        customer_phone: customerPhone || null,
+        delivery_address: deliveryAddress || null,
+        delivery_status: orderType === 'delivery' ? 'preparing' : null,
         table_id: tableId || null,
         customer_id: body.customerId || null,
         loyalty_points_redeemed: Number(body.loyaltyPointsRedeemed || 0),
         promotion_id: body.promotionId || null,
-        cashier_id: cashierId,
+        cashier_id: cashierId || null,
         shift_id: shiftId || null,
-        kds_status: 'submitted',
+        kds_status: requiresStaffApproval ? 'draft' : 'submitted',
         payment_status: 'unpaid',
         subtotal,
         discount_amount: Number(discountAmount) || 0,

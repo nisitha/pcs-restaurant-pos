@@ -38,6 +38,8 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useShiftStore } from '@/stores/shift-store';
 import { useMenuStore } from '@/stores/menu-store';
 import { useCartStore } from '@/stores/cart-store';
+import { useBranchStore } from '@/stores/branch-store';
+import { saveOfflineOrder } from '@/lib/offline/sync-queue';
 import { MenuItem } from '@/types/menu.types';
 import { OrderType } from '@/types/pos.types';
 import { formatLKR } from '@/lib/utils/currency';
@@ -61,6 +63,7 @@ export default function PosBillingPage() {
   const router = useRouter();
   const { currentUser, isAuthenticated } = useAuthStore();
   const { activeShift, hasActiveShift } = useShiftStore();
+  const { activeBranchId } = useBranchStore();
   const { categories, items, fetchMenu } = useMenuStore();
 
   const {
@@ -337,7 +340,7 @@ export default function PosBillingPage() {
 
       // 1. Submit Order
       const orderPayload = {
-        branchId: '00000000-0000-0000-0000-000000000001',
+        branchId: activeBranchId || '00000000-0000-0000-0000-000000000001',
         cashierId,
         shiftId,
         orderType,
@@ -366,6 +369,30 @@ export default function PosBillingPage() {
           modifiers: item.modifiers || [],
         })),
       };
+
+      // Handle Offline Billing
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        await saveOfflineOrder(orderPayload);
+        const tempOrderNum = `OFFLINE-${Date.now().toString().slice(-6)}`;
+        setSuccessDetails({
+          orderNumber: tempOrderNum,
+          orderId: tempOrderNum,
+          totalAmount: getTotal(),
+          paymentMethod: selectedPaymentMethod,
+          paymentTime: new Date().toLocaleTimeString(),
+          subtotal: getSubtotal(),
+          serviceCharge: getServiceCharge(),
+          tableNumber: tableNumber || null,
+          items: cartItems.map((i) => ({
+            name: i.item_name,
+            quantity: i.quantity,
+            price: i.unit_price,
+          })),
+        });
+        clearCart();
+        setIsPaymentSuccessOpen(true);
+        return;
+      }
 
       const orderRes = await fetch('/api/orders', {
         method: 'POST',

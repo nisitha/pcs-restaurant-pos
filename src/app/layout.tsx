@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Plus_Jakarta_Sans, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { AppSidebarShell } from '@/components/layout/sidebar-shell';
@@ -31,7 +32,9 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#F6F7F9] text-[#1A1D1F] font-sans">
-        <AppSidebarShell>{children}</AppSidebarShell>
+        <Suspense fallback={<div className="h-screen w-screen bg-[#F6F7F9]" />}>
+          <AppSidebarShell>{children}</AppSidebarShell>
+        </Suspense>
       </body>
     </html>
   );

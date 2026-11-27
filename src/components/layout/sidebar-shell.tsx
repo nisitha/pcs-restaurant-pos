@@ -26,9 +26,16 @@ import {
   Users,
   Tag,
   BarChart3,
+  Building2,
+  Bike,
+  Wifi,
+  WifiOff,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useShiftStore } from '@/stores/shift-store';
+import { useBranchStore } from '@/stores/branch-store';
+import { useOfflineSync } from '@/lib/offline/sync-queue';
 import { OpenShiftDialog } from '@/components/shifts/open-shift-dialog';
 import { CashDrawerDialog } from '@/components/shifts/cash-drawer-dialog';
 import { CloseShiftDialog } from '@/components/shifts/close-shift-dialog';
@@ -43,14 +50,16 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
   const router = useRouter();
   const { currentUser, logout } = useAuthStore();
   const { activeShift, hasActiveShift } = useShiftStore();
+  const { branches, activeBranchId, activeBranch, setActiveBranchId } = useBranchStore();
+  const { isOnline, pendingCount, isSyncing, syncNow } = useOfflineSync();
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isOpenShiftOpen, setIsOpenShiftOpen] = useState(false);
   const [isDrawerActionOpen, setIsDrawerActionOpen] = useState(false);
   const [isCloseShiftOpen, setIsCloseShiftOpen] = useState(false);
 
-  // If on login page, render children cleanly without sidebar
-  if (pathname === '/login') {
+  // If on login page or customer self-ordering pages, render children cleanly without staff sidebar
+  if (pathname === '/login' || pathname.startsWith('/order')) {
     return <>{children}</>;
   }
 
@@ -71,6 +80,8 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
     { href: '/admin/inventory', label: 'Inventory & Stock', icon: Boxes, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/admin/purchasing', label: 'Purchasing & GRN', icon: Truck, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/admin/customers', label: 'Customers & CRM', icon: Users, roles: ['cashier', 'waiter', 'manager', 'owner', 'super_admin'] },
+    { href: '/admin/delivery', label: 'Delivery Dispatch', icon: Bike, roles: ['cashier', 'manager', 'owner', 'super_admin'] },
+    { href: '/admin/branches', label: 'Branches & Transfers', icon: Building2, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/admin/promotions', label: 'Promotions & Combos', icon: Tag, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/admin/reports', label: 'BI Reports', icon: BarChart3, roles: ['manager', 'owner', 'super_admin'] },
     { href: '/admin/menu', label: 'Menu Settings', icon: Settings, roles: ['manager', 'owner', 'super_admin'] },
@@ -101,13 +112,22 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
               <UtensilsCrossed className="w-5 h-5" />
             </div>
             {!isCollapsed && (
-              <div className="leading-tight">
+              <div className="leading-tight flex-1 min-w-0 pr-1">
                 <span className="font-extrabold text-base tracking-tight text-[#1A1D1F] block">
                   PCS POS
                 </span>
-                <span className="text-[10px] text-[#7C828D] font-medium tracking-wide">
-                  Colombo Branch
-                </span>
+                <select
+                  value={activeBranchId}
+                  onChange={(e) => setActiveBranchId(e.target.value)}
+                  className="text-[10px] text-[#119C49] font-bold tracking-wide bg-transparent border-0 p-0 focus:outline-none cursor-pointer truncate max-w-32"
+                  title="Switch Active Branch"
+                >
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id} className="text-[#1A1D1F] bg-white font-sans text-xs">
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </Link>
@@ -152,6 +172,40 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
 
         {/* Bottom: Staff Profile Chip + Shift Action + Logout */}
         <div className="p-3 border-t border-[#F4F5F7] space-y-2 bg-[#FCFCFD]">
+          {/* Network & Offline Order Queue Status */}
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold ${
+              !isOnline
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : pendingCount > 0
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : 'bg-[#D1F0DC]/40 border-[#BDE8CB] text-[#119C49]'
+            } ${isCollapsed ? 'justify-center p-1.5' : 'justify-between'}`}
+          >
+            <div className="flex items-center gap-1.5 truncate">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  !isOnline || pendingCount > 0 ? 'bg-amber-500 animate-pulse' : 'bg-[#119C49]'
+                }`}
+              />
+              {!isCollapsed && (
+                <span className="truncate">
+                  {!isOnline ? 'Offline Mode' : pendingCount > 0 ? `${pendingCount} Queued` : 'Online'}
+                </span>
+              )}
+            </div>
+            {!isCollapsed && pendingCount > 0 && isOnline && (
+              <button
+                type="button"
+                onClick={() => syncNow()}
+                disabled={isSyncing}
+                className="text-[10px] px-2 py-0.5 rounded-lg bg-[#119C49] text-white hover:bg-[#0E823D] flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw className={`w-2.5 h-2.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>Sync</span>
+              </button>
+            )}
+          </div>
           {/* Active Shift Status Pill */}
           {currentUser && (currentUser.role === 'cashier' || currentUser.role === 'manager' || currentUser.role === 'owner') && (
             <div>

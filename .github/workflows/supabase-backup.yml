@@ -1,0 +1,55 @@
+name: Daily Supabase Backup & Keep-Alive
+
+on:
+  schedule:
+    # Runs daily at 02:00 UTC (07:30 AM Asia/Colombo)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  backup-and-keepalive:
+    name: Backup Supabase Database & Keep Alive
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL Client Tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
+
+      - name: Keep-Alive Ping & PostgreSQL Dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not configured in GitHub Secrets. Please configure it in Repository Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+          mkdir -p backups
+          TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
+          BACKUP_FILE="backups/pcs_pos_backup_${TIMESTAMP}.sql.gz"
+
+          echo "Pinging Supabase database (Keep-Alive)..."
+          psql "$SUPABASE_DB_URL" -c "SELECT NOW() AS keep_alive_timestamp, current_database();"
+
+          echo "Dumping PostgreSQL schema and data..."
+          pg_dump "$SUPABASE_DB_URL" \
+            --clean \
+            --if-exists \
+            --no-owner \
+            --no-privileges \
+            | gzip -9 > "$BACKUP_FILE"
+
+          echo "Backup created successfully: $BACKUP_FILE"
+          ls -lh "$BACKUP_FILE"
+
+      - name: Upload Backup Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-database-backup
+          path: backups/*.sql.gz
+          retention-days: 30
