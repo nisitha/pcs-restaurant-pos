@@ -1,9 +1,9 @@
 name: Daily Supabase Backup & Keep-Alive
 
 on:
-  schedule:
-    # Runs daily at 02:00 UTC (07:30 AM Asia/Colombo)
-    - cron: '0 2 * * *'
+  # schedule:
+  #   # Runs daily at 02:00 UTC (07:30 AM Asia/Colombo)
+  #   - cron: '0 2 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
