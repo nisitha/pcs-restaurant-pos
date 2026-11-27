@@ -28,6 +28,9 @@ import {
   RefreshCw,
   Wallet,
   Focus,
+  Tv,
+  Monitor,
+  TabletSmartphone,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useShiftStore } from '@/stores/shift-store';
@@ -94,6 +97,15 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'customer-screens',
+    title: 'Customer Screens',
+    items: [
+      { href: '/orb', label: 'Order Ready Board', icon: Tv, roles: ['cashier', 'waiter', 'chef', 'manager', 'owner', 'super_admin'] },
+      { href: '/cfd', label: 'Customer Display', icon: Monitor, roles: ['cashier', 'manager', 'owner', 'super_admin'] },
+      { href: '/kiosk', label: 'Kiosk Mode', icon: TabletSmartphone, roles: ['cashier', 'manager', 'owner', 'super_admin'] },
+    ],
+  },
+  {
     id: 'reports-settings',
     title: 'Reports & Settings',
     items: [
@@ -120,6 +132,7 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
     'kitchen-floor': true,
     'inventory-cost': false,
     'crm-growth': false,
+    'customer-screens': true,
     'reports-settings': true,
   });
 
@@ -148,8 +161,15 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
     }
   }, [pathname]);
 
-  // If on login page or customer self-ordering pages, render children cleanly without staff sidebar
-  if (pathname === '/login' || pathname.startsWith('/order')) {
+  // Full-screen customer/kiosk/onboarding routes render cleanly without staff sidebar
+  if (
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname.startsWith('/order') ||
+    pathname.startsWith('/orb') ||
+    pathname.startsWith('/cfd') ||
+    pathname.startsWith('/kiosk')
+  ) {
     return <>{children}</>;
   }
 

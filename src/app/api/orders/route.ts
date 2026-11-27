@@ -125,7 +125,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const isSelfOrder = orderSource === 'table_qr' || orderSource === 'online_web';
+    const isSelfOrder =
+      orderSource === 'table_qr' ||
+      orderSource === 'online_web' ||
+      orderSource === 'kiosk';
     if (!cashierId && !isSelfOrder) {
       return NextResponse.json(
         { success: false, message: 'Cashier ID is required for POS/Waiter orders.' },

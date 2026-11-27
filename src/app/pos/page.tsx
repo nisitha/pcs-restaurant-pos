@@ -61,6 +61,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
+import { broadcastCfdState, mapCartItemsForCfd } from '@/lib/pos/cfd-sync';
 
 type PosTenderMethod = 'cash' | 'credit_card' | 'qr_payment' | 'whatsapp_ebill';
 
@@ -492,6 +493,44 @@ export default function PosBillingPage() {
   const serviceCharge = getServiceCharge();
   const total = getTotal();
   const activeBranchName = activeBranch?.name || 'Colombo Main';
+
+  // Broadcast live POS state to Customer Facing Display (/cfd)
+  useEffect(() => {
+    broadcastCfdState({
+      branchName: activeBranchName,
+      orderType,
+      tableNumber,
+      customerName,
+      items: mapCartItemsForCfd(cartItems),
+      subtotal,
+      discountAmount,
+      loyaltyDiscount: loyaltyPointsToRedeem || 0,
+      serviceCharge,
+      total,
+      paymentSuccess: isPaymentSuccessOpen
+        ? {
+            orderNumber: successDetails.orderNumber,
+            totalAmount: successDetails.totalAmount,
+            paymentMethod: successDetails.paymentMethod,
+            paymentTime: successDetails.paymentTime,
+          }
+        : null,
+      updatedAt: Date.now(),
+    });
+  }, [
+    activeBranchName,
+    orderType,
+    tableNumber,
+    customerName,
+    cartItems,
+    subtotal,
+    discountAmount,
+    loyaltyPointsToRedeem,
+    serviceCharge,
+    total,
+    isPaymentSuccessOpen,
+    successDetails,
+  ]);
 
   return (
     <div className="flex-1 flex h-full overflow-hidden bg-[#f4fbf7]">

@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   RefreshCw,
   AlertCircle,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -120,6 +121,28 @@ export default function DeliveryDispatchPage() {
   };
 
   const availableRiders = riders.filter((r) => r.status === 'available');
+
+  const handleNotifyDeliveryWhatsApp = (order: any) => {
+    const rawPhone = (order.customer_phone || order.customer?.phone || '+94787676576').replace(/[^0-9]/g, '');
+    const formattedPhone = rawPhone.startsWith('0') && rawPhone.length === 10 ? `94${rawPhone.slice(1)}` : rawPhone;
+    const customerLabel = order.customer_name || order.customer?.name || 'Valued Guest';
+    const assignedRider = riders.find((r) => r.id === order.delivery_rider_id);
+    const status = order.delivery_status || 'preparing';
+
+    const statusLine =
+      status === 'dispatched'
+        ? `is OUT FOR DELIVERY${assignedRider ? ` with our rider ${assignedRider.name} (${assignedRider.phone})` : ''}!`
+        : status === 'ready_for_pickup'
+        ? 'is READY FOR PICKUP / DISPATCH from our outlet!'
+        : status === 'delivered'
+        ? 'has been DELIVERED. Enjoy your meal!'
+        : 'is currently being prepared in our kitchen.';
+
+    const text = encodeURIComponent(
+      `Hello ${customerLabel}, your PCS Bill order #${order.order_number} (Rs. ${Number(order.total_amount).toLocaleString()}) ${statusLine}\n\npcsbill.com • Hotline: +94 78 76 76 576`
+    );
+    window.open(`https://wa.me/${formattedPhone}?text=${text}`, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
@@ -296,11 +319,22 @@ export default function DeliveryDispatchPage() {
                   )}
 
                   {status === 'delivered' && (
-                    <div className="w-full text-center py-1 text-xs font-bold text-[#119C49] flex items-center justify-center gap-1">
+                    <div className="flex-1 text-center py-1 text-xs font-bold text-[#0f8a5f] flex items-center justify-center gap-1">
                       <ShieldCheck className="w-4 h-4" />
                       <span>Completed</span>
                     </div>
                   )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleNotifyDeliveryWhatsApp(order)}
+                    className="h-9 px-3 rounded-xl border-[#0f8a5f]/30 bg-[#cdeeb0]/40 hover:bg-[#cdeeb0] text-[#072619] text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    title="Notify Customer via WhatsApp"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 text-[#0f8a5f]" />
+                    <span>WhatsApp</span>
+                  </Button>
                 </div>
               </div>
             );

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PinPad } from '@/components/auth/pin-pad';
 import { useAuthStore } from '@/stores/auth-store';
@@ -111,9 +112,17 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E5ECE8] text-xs font-bold text-[#072619] shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-[#0f8a5f] animate-pulse" />
-          <span>Hotline / WhatsApp: +94 78 76 76 576</span>
+        <div className="flex items-center gap-2.5">
+          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E5ECE8] text-xs font-bold text-[#072619] shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-[#0f8a5f] animate-pulse" />
+            <span>Hotline / WhatsApp: +94 78 76 76 576</span>
+          </div>
+          <Link
+            href="/register"
+            className="px-3.5 py-1.5 rounded-full bg-[#072619] hover:bg-[#0f8a5f] text-[#a3e04f] hover:text-white text-xs font-extrabold transition shadow-xs"
+          >
+            New Restaurant Signup &rarr;
+          </Link>
         </div>
       </header>
 

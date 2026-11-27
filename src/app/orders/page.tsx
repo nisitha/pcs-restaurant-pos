@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ShieldAlert,
+  MessageCircle,
 } from 'lucide-react';
 import { VoidRefundModal } from '@/components/orders/void-refund-modal';
 
@@ -77,6 +78,23 @@ export default function OrdersHistoryPage() {
     (o) => o.kds_status === 'submitted' || o.kds_status === 'in_preparation'
   ).length;
   const readyCount = orders.filter((o) => o.kds_status === 'ready').length;
+
+  const handleNotifyWhatsApp = (order: ActiveOrder) => {
+    const rawPhone = (order.customer_phone || '+94787676576').replace(/[^0-9]/g, '');
+    const formattedPhone = rawPhone.startsWith('0') && rawPhone.length === 10 ? `94${rawPhone.slice(1)}` : rawPhone;
+    const customerLabel = order.customer_name || 'Valued Guest';
+    const statusText =
+      order.kds_status === 'ready'
+        ? 'is READY for pickup / service!'
+        : order.order_type === 'delivery'
+        ? 'is on the way / out for delivery!'
+        : 'is currently being freshly prepared in our kitchen.';
+
+    const text = encodeURIComponent(
+      `Hello ${customerLabel}, your PCS Bill order #${order.order_number} (${formatLKR(order.total_amount)}) ${statusText}\n\nThank you for choosing us! • pcsbill.com`
+    );
+    window.open(`https://wa.me/${formattedPhone}?text=${text}`, '_blank', 'noopener,noreferrer');
+  };
 
   const getOrderTypeBadge = (type: OrderType, tableNum?: string | null) => {
     switch (type) {
@@ -244,19 +262,33 @@ export default function OrdersHistoryPage() {
                 </div>
 
                 {order.payment_status !== 'voided' && order.payment_status !== 'refunded' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedOrderForVoid(order);
-                      setIsVoidModalOpen(true);
-                    }}
-                    className="rounded-xl border-[#EBECEF] text-red-600 hover:bg-red-50 hover:border-red-200 text-xs font-bold h-8 px-2.5 gap-1 transition"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                    <span>Void / Refund</span>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleNotifyWhatsApp(order)}
+                      className="rounded-xl border-[#0f8a5f]/30 bg-[#cdeeb0]/40 text-[#072619] hover:bg-[#cdeeb0] text-xs font-bold h-8 px-2.5 gap-1 transition cursor-pointer"
+                      title="Send WhatsApp Status Update"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 text-[#0f8a5f]" />
+                      <span>WhatsApp</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedOrderForVoid(order);
+                        setIsVoidModalOpen(true);
+                      }}
+                      className="rounded-xl border-[#EBECEF] text-red-600 hover:bg-red-50 hover:border-red-200 text-xs font-bold h-8 px-2.5 gap-1 transition cursor-pointer"
+                    >
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                      <span>Void / Refund</span>
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
