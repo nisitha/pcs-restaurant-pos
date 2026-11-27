@@ -6,10 +6,12 @@
 --              Public Online Storefront, and Realtime Publications.
 -- ============================================================================
 
--- 1. RELAX CONSTRAINTS ON ORDERS FOR SELF-ORDERING (TABLE QR & ONLINE)
+-- 1. RELAX CONSTRAINTS ON ORDERS & AUDIT LOGS FOR SELF-ORDERING (TABLE QR & ONLINE)
 -- Allow cashier_id and shift_id to be nullable so guests can order without cashier session
 ALTER TABLE orders ALTER COLUMN cashier_id DROP NOT NULL;
 ALTER TABLE orders ALTER COLUMN shift_id DROP NOT NULL;
+ALTER TABLE audit_logs ALTER COLUMN user_id DROP NOT NULL;
+ALTER TABLE audit_logs ALTER COLUMN reason DROP NOT NULL;
 
 -- Add Phase 4 columns to orders
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_source VARCHAR(30) DEFAULT 'pos' NOT NULL;
@@ -23,6 +25,9 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS requires_staff_approval BOOLEAN DEFAULT FALSE NOT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES user_profiles(id) ON DELETE SET NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
+
+-- Ensure dining_tables has updated_at
+ALTER TABLE dining_tables ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW());
 
 -- 2. DELIVERY RIDERS TABLE
 CREATE TABLE IF NOT EXISTS delivery_riders (
@@ -70,6 +75,9 @@ CREATE TABLE IF NOT EXISTS inter_branch_transfer_items (
     unit_cost NUMERIC(10, 2) DEFAULT 0.00 NOT NULL,
     created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
+
+-- Add reference_transfer_id to stock_movements
+ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS reference_transfer_id UUID REFERENCES inter_branch_stock_transfers(id) ON DELETE SET NULL;
 
 -- 4. ATOMIC INTER-BRANCH STOCK TRANSFER PROCESSOR RPC
 CREATE OR REPLACE FUNCTION process_inter_branch_transfer(
@@ -128,7 +136,8 @@ BEGIN
             movement_type,
             quantity,
             unit_cost,
-            reference_id,
+            reference_transfer_id,
+            idempotent_key,
             notes,
             created_by
         ) VALUES (
@@ -138,6 +147,7 @@ BEGIN
             -v_item.quantity,
             v_item.unit_cost,
             p_transfer_id,
+            'TRF-' || p_transfer_id || '-' || v_item.ingredient_id || '-SRC',
             'Transferred to branch: ' || v_transfer.to_branch_id,
             p_staff_id
         );
@@ -184,7 +194,8 @@ BEGIN
             movement_type,
             quantity,
             unit_cost,
-            reference_id,
+            reference_transfer_id,
+            idempotent_key,
             notes,
             created_by
         ) VALUES (
@@ -194,6 +205,7 @@ BEGIN
             v_item.quantity,
             v_item.unit_cost,
             p_transfer_id,
+            'TRF-' || p_transfer_id || '-' || v_dest_ing_id || '-DEST',
             'Transferred from branch: ' || v_transfer.from_branch_id,
             p_staff_id
         );
@@ -477,7 +489,7 @@ BEGIN
             order_id,
             branch_id,
             station_id,
-            kds_status,
+            status,
             created_at
         ) VALUES (
             v_ticket_id,
@@ -488,6 +500,12 @@ BEGIN
             v_initial_kds_status,
             TIMEZONE('utc', NOW())
         );
+
+        -- Link items to this station ticket
+        INSERT INTO station_ticket_items (ticket_id, order_item_id)
+        SELECT v_ticket_id, oi.id
+        FROM order_items oi
+        WHERE oi.order_id = v_order_id AND oi.station_id = v_station_record.station_id;
     END LOOP;
 
     -- J. Table Occupancy Update
@@ -498,27 +516,35 @@ BEGIN
         WHERE id = p_table_id;
     END IF;
 
-    -- K. Audit Log
-    INSERT INTO audit_logs (
-        branch_id,
-        user_id,
-        action,
-        entity_name,
-        entity_id,
-        new_values
-    ) VALUES (
-        p_branch_id,
-        p_cashier_id,
-        'order_submitted',
-        'orders',
-        v_order_id,
-        jsonb_build_object(
-            'order_number', v_order_number,
-            'source', p_order_source,
-            'total_amount', v_total_amount,
-            'requires_approval', p_requires_staff_approval
-        )
-    );
+    -- K. Audit Log Entry
+    IF p_cashier_id IS NOT NULL THEN
+        INSERT INTO audit_logs (
+            id,
+            branch_id,
+            user_id,
+            action_type,
+            entity_name,
+            entity_id,
+            new_data,
+            reason,
+            created_at
+        ) VALUES (
+            uuid_generate_v4(),
+            p_branch_id,
+            p_cashier_id,
+            'order_submit',
+            'orders',
+            v_order_id,
+            jsonb_build_object(
+                'order_number', v_order_number,
+                'source', p_order_source,
+                'total_amount', v_total_amount,
+                'requires_approval', p_requires_staff_approval
+            ),
+            'Order submitted via ' || p_order_source,
+            TIMEZONE('utc', NOW())
+        );
+    END IF;
 
     RETURN jsonb_build_object(
         'success', true,
@@ -558,7 +584,7 @@ BEGIN
     WHERE order_id = p_order_id;
 
     UPDATE station_routing_tickets
-    SET kds_status = 'submitted'
+    SET status = 'submitted'
     WHERE order_id = p_order_id;
 
     RETURN jsonb_build_object('success', true, 'message', 'Order approved and sent to KDS');
@@ -639,22 +665,35 @@ VALUES
     ('cccccccc-2222-bbbb-bbbb-bbbbbbbbbbbb', '00000000-0000-0000-0000-000000000002', 'BEV', 'Beverage Station', true)
 ON CONFLICT (branch_id, code) DO NOTHING;
 
--- C. Dining Tables for Kandy Branch
-INSERT INTO dining_tables (branch_id, table_number, capacity, section, status)
+-- C. Restaurant Floor & Dining Tables for Kandy Branch
+INSERT INTO restaurant_floors (id, branch_id, name, display_order)
+VALUES ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000002', 'Kandy Dining Hall', 1)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO dining_tables (id, branch_id, floor_id, table_number, seating_capacity, status, pos_x, pos_y, is_active)
 VALUES
-    ('00000000-0000-0000-0000-000000000002', 'K1', 4, 'Main Hall', 'available'),
-    ('00000000-0000-0000-0000-000000000002', 'K2', 2, 'Main Hall', 'available'),
-    ('00000000-0000-0000-0000-000000000002', 'K3', 6, 'Garden Patio', 'available'),
-    ('00000000-0000-0000-0000-000000000002', 'K4', 4, 'Garden Patio', 'available')
-ON CONFLICT (branch_id, table_number) DO NOTHING;
+    ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000020', 'K1', 4, 'available', 40, 40, true),
+    ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000020', 'K2', 2, 'available', 160, 40, true),
+    ('20000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000020', 'K3', 6, 'available', 280, 40, true),
+    ('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000020', 'K4', 4, 'available', 400, 40, true)
+ON CONFLICT (branch_id, table_number) DO UPDATE SET
+    seating_capacity = EXCLUDED.seating_capacity,
+    status = EXCLUDED.status,
+    pos_x = EXCLUDED.pos_x,
+    pos_y = EXCLUDED.pos_y,
+    is_active = EXCLUDED.is_active;
 
 -- D. Ingredients for Kandy Branch (for transfer testing)
-INSERT INTO ingredients (branch_id, name, sku, unit, current_stock, min_stock_level, unit_cost, category)
+INSERT INTO ingredients (id, branch_id, name, sku, unit, current_stock, min_stock_level, unit_cost, category)
 VALUES
-    ('00000000-0000-0000-0000-000000000002', 'Basmati Rice', 'ING-BR-01', 'kg', 15.000, 10.000, 450.00, 'Dry Goods'),
-    ('00000000-0000-0000-0000-000000000002', 'Chicken Breast', 'ING-CB-01', 'kg', 8.500, 5.000, 1400.00, 'Meat & Poultry'),
-    ('00000000-0000-0000-0000-000000000002', 'Cooking Oil', 'ING-OIL-01', 'l', 12.000, 8.000, 850.00, 'Oils & Sauces')
-ON CONFLICT DO NOTHING;
+    ('40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Basmati Rice', 'ING-BR-01', 'kg', 15.000, 10.000, 450.00, 'Dry Goods'),
+    ('40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'Chicken Breast', 'ING-CB-01', 'kg', 8.500, 5.000, 1400.00, 'Meat & Poultry'),
+    ('40000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'Cooking Oil', 'ING-OIL-01', 'l', 12.000, 8.000, 850.00, 'Oils & Sauces')
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    unit = EXCLUDED.unit,
+    current_stock = EXCLUDED.current_stock,
+    unit_cost = EXCLUDED.unit_cost;
 
 -- E. Delivery Riders
 INSERT INTO delivery_riders (id, branch_id, name, phone, vehicle_type, vehicle_plate, status, is_active)
