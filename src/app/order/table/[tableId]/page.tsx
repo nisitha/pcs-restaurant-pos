@@ -16,8 +16,10 @@ import {
   Flame,
   AlertCircle,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DishImage } from '@/components/ui/dish-image';
 
 interface MenuItem {
   id: string;
@@ -49,6 +51,7 @@ interface CartItem {
   name: string;
   unit_price: number;
   quantity: number;
+  image_url?: string;
   variant_id?: string;
   variant_name?: string;
   modifiers?: Array<{ modifier_id: string; modifier_name: string; unit_price: number }>;
@@ -163,6 +166,7 @@ export default function TableSelfOrderPage({
           name: item.name,
           unit_price: Number(item.base_price),
           quantity: 1,
+          image_url: item.image_url,
         },
       ];
     });
@@ -206,6 +210,7 @@ export default function TableSelfOrderPage({
         name: customizingItem.name,
         unit_price: price,
         quantity: 1,
+        image_url: customizingItem.image_url,
         variant_id: selectedVariantId || undefined,
         variant_name: vName,
         modifiers: appliedMods,
@@ -301,10 +306,10 @@ export default function TableSelfOrderPage({
               <Utensils className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base font-extrabold text-[#1A1D1F] leading-tight">
-                PCS Restaurant
+              <h1 className="font-display text-base font-extrabold text-[#072619] leading-tight">
+                PCS Bill Self-Order
               </h1>
-              <p className="text-xs font-semibold text-[#119C49] flex items-center gap-1">
+              <p className="text-xs font-semibold text-[#0f8a5f] flex items-center gap-1">
                 <span>Table {table?.table_number || '...'}</span>
                 <span className="text-[#A0A4AB]">•</span>
                 <span className="text-[#7C828D]">{table?.section || 'Dine-In'}</span>
@@ -433,22 +438,43 @@ export default function TableSelfOrderPage({
         </div>
 
         {/* Menu Items List */}
-        <div className="space-y-3 pt-1">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: { transition: { staggerChildren: 0.025 } },
+          }}
+          className="space-y-3 pt-1"
+        >
           {filteredItems.map((item) => (
-            <div
+            <motion.div
               key={item.id}
-              className="bg-white rounded-3xl p-4 border border-[#EBECEF] flex items-center justify-between gap-4 shadow-2xs hover:shadow-sm transition-shadow"
+              variants={{
+                hidden: { opacity: 0, y: 10 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+              }}
+              className="bg-white rounded-3xl p-3.5 border border-[#EBECEF] flex items-center justify-between gap-3.5 shadow-2xs hover:shadow-sm transition-all"
             >
+              <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-[#F6F7F9] shadow-2xs">
+                <DishImage
+                  src={item.image_url}
+                  alt={item.name}
+                  category={categories.find((c) => c.id === item.category_id)?.name || item.name}
+                  aspectRatio="square"
+                  className="w-full h-full"
+                />
+              </div>
+
               <div className="flex-1 min-w-0">
-                <h4 className="text-base font-extrabold text-[#1A1D1F] truncate">
+                <h4 className="text-sm font-extrabold text-[#1A1D1F] truncate">
                   {item.name}
                 </h4>
                 {item.description && (
-                  <p className="text-xs text-[#7C828D] line-clamp-2 mt-0.5">
+                  <p className="text-xs text-[#7C828D] line-clamp-1 mt-0.5">
                     {item.description}
                   </p>
                 )}
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-sm font-black text-[#119C49]">
                     Rs. {Number(item.base_price).toLocaleString()}
                   </span>
@@ -462,15 +488,17 @@ export default function TableSelfOrderPage({
 
               {/* Add Button */}
               <div className="shrink-0">
-                <Button
-                  onClick={() => handleAddToCart(item)}
-                  className="h-10 px-4 rounded-2xl bg-[#D1F0DC] hover:bg-[#119C49] text-[#119C49] hover:text-white font-extrabold text-xs flex items-center gap-1.5 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add</span>
-                </Button>
+                <motion.div whileTap={{ scale: 0.92 }}>
+                  <Button
+                    onClick={() => handleAddToCart(item)}
+                    className="h-9 px-3.5 rounded-2xl bg-[#D1F0DC] hover:bg-[#119C49] text-[#119C49] hover:text-white font-extrabold text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add</span>
+                  </Button>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           ))}
 
           {filteredItems.length === 0 && (
@@ -480,7 +508,7 @@ export default function TableSelfOrderPage({
               <p className="text-xs text-[#7C828D]">Try searching for something else</p>
             </div>
           )}
-        </div>
+        </motion.div>
       </main>
 
       {/* Floating Bottom Cart Bar */}
@@ -532,8 +560,18 @@ export default function TableSelfOrderPage({
             {cart.map((item) => (
               <div
                 key={item.cart_id}
-                className="bg-[#F6F7F9] p-3.5 rounded-2xl flex items-center justify-between gap-3"
+                className="bg-[#F6F7F9] p-3 rounded-2xl flex items-center justify-between gap-3"
               >
+                <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-white border border-[#EBECEF]">
+                  <DishImage
+                    src={item.image_url}
+                    alt={item.name}
+                    category={item.name}
+                    aspectRatio="square"
+                    className="w-full h-full"
+                  />
+                </div>
+
                 <div className="flex-1 min-w-0">
                   <h5 className="text-sm font-extrabold text-[#1A1D1F] truncate">
                     {item.name}
@@ -641,12 +679,25 @@ export default function TableSelfOrderPage({
       <Dialog open={!!customizingItem} onOpenChange={() => setCustomizingItem(null)}>
         <DialogContent className="max-w-md rounded-3xl bg-white border-[#EBECEF] p-6 shadow-2xl">
           <DialogHeader className="pb-3 border-b border-[#EBECEF]">
-            <DialogTitle className="text-lg font-black text-[#1A1D1F]">
-              Customize {customizingItem?.name}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-[#7C828D]">
-              Select portion size and preferences for this item.
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 bg-[#F6F7F9] border border-[#EBECEF]">
+                <DishImage
+                  src={customizingItem?.image_url}
+                  alt={customizingItem?.name || 'Dish'}
+                  category={customizingItem?.name}
+                  aspectRatio="square"
+                  className="w-full h-full"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-lg font-black text-[#1A1D1F] truncate">
+                  Customize {customizingItem?.name}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-[#7C828D]">
+                  Select portion size and preferences for this item.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
           {/* Variants */}

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatLKR } from '@/lib/utils/currency';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 export default function AdminReportsPage() {
   const [range, setRange] = useState<'today' | 'week' | 'month' | 'all'>('today');
@@ -113,7 +114,7 @@ export default function AdminReportsPage() {
         <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm">
           <span className="text-xs text-[#7C828D] font-medium block mb-1">Net Sales Revenue</span>
           <p className="text-2xl font-black text-[#119C49] font-mono">
-            {formatLKR(financials.net_sales)}
+            <AnimatedCounter value={Number(financials.net_sales || 0)} prefix="Rs. " decimals={2} />
           </p>
           <span className="text-[11px] text-[#7C828D] block mt-2">
             Gross: {formatLKR(financials.gross_revenue)} &bull; {financials.paid_orders_count} Paid Orders
@@ -124,7 +125,7 @@ export default function AdminReportsPage() {
         <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm">
           <span className="text-xs text-[#7C828D] font-medium block mb-1">Recipe Cost of Goods (COGS)</span>
           <p className="text-2xl font-black text-[#1A1D1F] font-mono">
-            {formatLKR(financials.cogs)}
+            <AnimatedCounter value={Number(financials.cogs || 0)} prefix="Rs. " decimals={2} />
           </p>
           <span className="text-[11px] text-[#7C828D] block mt-2">
             Ingredient sales deductions
@@ -135,7 +136,7 @@ export default function AdminReportsPage() {
         <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm">
           <span className="text-xs text-[#7C828D] font-medium block mb-1">Estimated Gross Profit</span>
           <p className="text-2xl font-black text-[#119C49] font-mono">
-            {formatLKR(financials.gross_profit)}
+            <AnimatedCounter value={Number(financials.gross_profit || 0)} prefix="Rs. " decimals={2} />
           </p>
           <span className="text-[11px] text-[#119C49] font-bold block mt-2">
             {financials.gross_profit_margin}% Gross Margin
@@ -146,7 +147,7 @@ export default function AdminReportsPage() {
         <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm">
           <span className="text-xs text-[#7C828D] font-medium block mb-1">Discounts & Wastage</span>
           <p className="text-2xl font-black text-red-600 font-mono">
-            {formatLKR(financials.discounts + financials.wastage)}
+            <AnimatedCounter value={Number((financials.discounts || 0) + (financials.wastage || 0))} prefix="Rs. " decimals={2} />
           </p>
           <span className="text-[11px] text-[#7C828D] block mt-2">
             Disc: {formatLKR(financials.discounts)} &bull; Waste: {formatLKR(financials.wastage)}

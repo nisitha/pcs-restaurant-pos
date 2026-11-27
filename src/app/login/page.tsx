@@ -94,34 +94,39 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#F6F7F9] flex flex-col justify-between p-6">
+    <div className="min-h-screen w-full bg-[#f4fbf7] flex flex-col justify-between p-6">
       {/* Brand Header */}
-      <header className="max-w-4xl mx-auto w-full flex items-center justify-between pb-4">
+      <header className="max-w-5xl mx-auto w-full flex items-center justify-between pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#D1F0DC] text-[#119C49] flex items-center justify-center font-bold border border-[#BDE8CB] shadow-sm">
+          <div className="w-11 h-11 rounded-2xl bg-[#072619] text-[#a3e04f] flex items-center justify-center font-bold border border-[#0f8a5f]/30 shadow-md">
             <UtensilsCrossed className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-extrabold text-base text-[#1A1D1F] tracking-tight block">
-              PCS RESTAURANT POS
+            <span className="font-display font-extrabold text-lg text-[#072619] tracking-tight block leading-none">
+              PCS Bill <span className="text-[#0f8a5f]">OS</span>
             </span>
-            <span className="text-[10px] text-[#7C828D] font-mono">
-              Terminal Access &bull; Colombo Branch
+            <span className="text-[11px] text-[#4f675a] font-mono mt-1 block">
+              pcsbill.com &bull; Terminal Access &bull; Colombo Branch
             </span>
           </div>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E5ECE8] text-xs font-bold text-[#072619] shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-[#0f8a5f] animate-pulse" />
+          <span>Hotline / WhatsApp: +94 78 76 76 576</span>
         </div>
       </header>
 
       {/* Main PIN Pad Card */}
       <main className="max-w-md mx-auto w-full">
-        <div className="bg-white border border-[#EBECEF] rounded-3xl p-8 shadow-xl text-center">
+        <div className="bg-white border border-[#E5ECE8] rounded-3xl p-8 shadow-xl shadow-[#072619]/5 text-center">
           {/* Lock Icon Halo */}
-          <div className="w-16 h-16 rounded-full bg-[#D1F0DC] text-[#119C49] flex items-center justify-center mx-auto mb-4 border border-[#BDE8CB] shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-[#cdeeb0]/60 text-[#0f8a5f] flex items-center justify-center mx-auto mb-4 border border-[#0f8a5f]/20 shadow-xs">
             <Lock className="w-7 h-7" />
           </div>
 
-          <h2 className="text-xl font-extrabold text-[#1A1D1F] tracking-tight">Staff PIN Login</h2>
-          <p className="text-xs text-[#7C828D] mt-1 mb-6">
+          <h2 className="font-display text-2xl font-extrabold text-[#072619] tracking-tight">Staff PIN Login</h2>
+          <p className="text-xs text-[#4f675a] mt-1 mb-6">
             Enter your 4-digit staff PIN code to unlock your station terminal.
           </p>
 
@@ -136,8 +141,8 @@ export default function LoginPage() {
                   onClick={() => setSelectedStaff(isSelected ? null : staff)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition border ${
                     isSelected
-                      ? 'bg-[#D1F0DC] border-[#119C49] text-[#119C49] shadow-sm'
-                      : 'bg-[#F6F7F9] border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#EBECEF]'
+                      ? 'bg-[#cdeeb0] border-[#0f8a5f] text-[#072619] shadow-xs'
+                      : 'bg-[#f4fbf7] border-[#E5ECE8] text-[#4f675a] hover:text-[#072619] hover:bg-[#e6f6ec]'
                   }`}
                 >
                   {getRoleIcon(staff.role)}
@@ -158,23 +163,23 @@ export default function LoginPage() {
         </div>
 
         {/* Demo Fast PIN Hints */}
-        <div className="mt-4 p-4 rounded-2xl bg-white border border-[#EBECEF] shadow-sm text-center">
-          <p className="text-[11px] font-bold text-[#7C828D] uppercase tracking-wide mb-1.5">
+        <div className="mt-4 p-4 rounded-2xl bg-white border border-[#E5ECE8] shadow-xs text-center">
+          <p className="text-[11px] font-bold text-[#4f675a] uppercase tracking-wide mb-2">
             Default Demo PINs:
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-mono font-bold">
-            <span className="text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">Owner: 1111</span>
-            <span className="text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">Manager: 2222</span>
-            <span className="text-[#119C49] bg-[#D1F0DC] px-2.5 py-1 rounded-full border border-[#BDE8CB]">Cashier: 3333</span>
-            <span className="text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">Waiter: 4444</span>
-            <span className="text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">Chef: 5555</span>
+          <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-mono font-bold">
+            <span className="text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">Owner: 1111</span>
+            <span className="text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">Manager: 2222</span>
+            <span className="text-[#072619] bg-[#cdeeb0] px-2.5 py-1 rounded-full border border-[#0f8a5f]/30">Cashier: 3333</span>
+            <span className="text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">Waiter: 4444</span>
+            <span className="text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">Chef: 5555</span>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="text-center text-[11px] text-[#7C828D] pt-4">
-        PCS Commercial Restaurant POS &bull; Regional Default: LKR (Rs.) &bull; Asia/Colombo
+      <footer className="text-center text-[11px] text-[#4f675a] pt-4">
+        <span className="font-bold text-[#072619]">PCS Bill</span> &bull; pcsbill.com &bull; Powered by Pixel Craft Studios &bull; Regional Default: LKR (Rs.)
       </footer>
     </div>
   );

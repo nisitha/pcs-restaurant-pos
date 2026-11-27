@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { Delete, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 
 interface PinPadProps {
   pin: string;
@@ -63,16 +64,23 @@ export function PinPad({
     <div className="flex flex-col items-center w-full max-w-xs mx-auto">
       {/* 4-Digit Dots Indicator */}
       <div className="flex items-center justify-center gap-4 mb-6">
-        {Array.from({ length: maxDigits }).map((_, idx) => (
-          <div
-            key={idx}
-            className={`w-5 h-5 rounded-full transition-all duration-200 border-2 ${
-              idx < pin.length
-                ? 'bg-[#119C49] border-[#119C49] scale-110 shadow-md shadow-[#119C49]/30'
-                : 'bg-[#F4F5F7] border-[#EBECEF]'
-            }`}
-          />
-        ))}
+        {Array.from({ length: maxDigits }).map((_, idx) => {
+          const isFilled = idx < pin.length;
+          return (
+            <motion.div
+              key={idx}
+              animate={{
+                scale: isFilled ? 1.15 : 1,
+                backgroundColor: isFilled ? '#119C49' : '#F4F5F7',
+                borderColor: isFilled ? '#119C49' : '#EBECEF',
+              }}
+              transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+              className={`w-5 h-5 rounded-full border-2 ${
+                isFilled ? 'shadow-md shadow-[#119C49]/30' : ''
+              }`}
+            />
+          );
+        })}
       </div>
 
       {/* Error Message */}
@@ -87,44 +95,48 @@ export function PinPad({
         {keys.map((key) => {
           if (key === 'C') {
             return (
-              <Button
+              <motion.button
                 key={key}
                 type="button"
-                variant="outline"
+                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.02 }}
                 disabled={isLoading || pin.length === 0}
                 onClick={handleClear}
-                className="h-16 text-sm font-semibold rounded-2xl bg-[#F6F7F9] border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#EBECEF] active:scale-95 transition"
+                className="h-16 text-sm font-semibold rounded-2xl bg-[#F6F7F9] border border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#EBECEF] transition flex items-center justify-center disabled:opacity-50"
               >
                 <X className="w-5 h-5" />
-              </Button>
+              </motion.button>
             );
           }
 
           if (key === 'DEL') {
             return (
-              <Button
+              <motion.button
                 key={key}
                 type="button"
-                variant="outline"
+                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.02 }}
                 disabled={isLoading || pin.length === 0}
                 onClick={handleBackspace}
-                className="h-16 text-sm font-semibold rounded-2xl bg-[#F6F7F9] border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#EBECEF] active:scale-95 transition"
+                className="h-16 text-sm font-semibold rounded-2xl bg-[#F6F7F9] border border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] hover:bg-[#EBECEF] transition flex items-center justify-center disabled:opacity-50"
               >
                 <Delete className="w-5 h-5" />
-              </Button>
+              </motion.button>
             );
           }
 
           return (
-            <Button
+            <motion.button
               key={key}
               type="button"
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.02 }}
               disabled={isLoading}
               onClick={() => handleDigit(key)}
-              className="h-16 text-xl font-bold font-mono rounded-2xl bg-white border border-[#EBECEF] text-[#1A1D1F] hover:bg-[#D1F0DC] hover:text-[#119C49] hover:border-[#BDE8CB] active:scale-95 shadow-sm transition"
+              className="h-16 text-xl font-bold font-mono rounded-2xl bg-white border border-[#EBECEF] text-[#1A1D1F] hover:bg-[#D1F0DC] hover:text-[#119C49] hover:border-[#BDE8CB] shadow-sm transition flex items-center justify-center disabled:opacity-50"
             >
               {key}
-            </Button>
+            </motion.button>
           );
         })}
       </div>

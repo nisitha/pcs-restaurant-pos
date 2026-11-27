@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useMenuStore } from '@/stores/menu-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ItemModal } from '@/components/menu/item-modal';
+import { DishImage } from '@/components/ui/dish-image';
 import { formatLKR } from '@/lib/utils/currency';
 import {
   Utensils,
@@ -170,29 +172,51 @@ export default function MenuManagementPage() {
       </div>
 
       {/* Dishes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={{
+          visible: { transition: { staggerChildren: 0.02 } },
+        }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
         {filteredItems.map((item) => (
-          <div
+          <motion.div
             key={item.id}
-            className={`bg-white border rounded-3xl p-5 shadow-sm flex flex-col justify-between transition ${
+            variants={{
+              hidden: { opacity: 0, y: 10 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+            }}
+            className={`bg-white border rounded-3xl p-4 sm:p-5 shadow-xs hover:shadow-sm flex flex-col justify-between transition-all ${
               item.is_available ? 'border-[#EBECEF]' : 'border-rose-200 bg-rose-50/20 opacity-75'
             }`}
           >
             <div>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div>
-                  <h3 className="text-sm font-bold text-[#1A1D1F] leading-snug">{item.name}</h3>
-                  {item.sku && <p className="text-[10px] text-[#7C828D] font-mono mt-0.5">SKU: {item.sku}</p>}
+              <div className="flex items-start gap-3.5 mb-3">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-[#F6F7F9] border border-[#EBECEF] shadow-2xs">
+                  <DishImage
+                    src={item.image_url}
+                    alt={item.name}
+                    category={categories.find((c) => c.id === item.category_id)?.name || item.name}
+                    aspectRatio="square"
+                    className="w-full h-full"
+                  />
                 </div>
-                {getStationBadge(item.default_station_id)}
-              </div>
 
-              <p className="text-lg font-black text-[#119C49] font-mono mt-2">
-                {formatLKR(Number(item.base_price))}
-              </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-1">
+                    <h3 className="text-sm font-extrabold text-[#1A1D1F] leading-snug truncate">{item.name}</h3>
+                    {getStationBadge(item.default_station_id)}
+                  </div>
+                  {item.sku && <p className="text-[10px] text-[#7C828D] font-mono mt-0.5">SKU: {item.sku}</p>}
+                  <p className="text-base font-black text-[#119C49] font-mono mt-1">
+                    {formatLKR(Number(item.base_price))}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-[#F4F5F7] flex items-center justify-between">
+            <div className="mt-2 pt-3 border-t border-[#F4F5F7] flex items-center justify-between">
               <span
                 className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
                   item.is_available ? 'bg-[#D1F0DC] text-[#119C49]' : 'bg-rose-100 text-rose-700'
@@ -215,9 +239,9 @@ export default function MenuManagementPage() {
                 {isToggling === item.id ? 'Updating...' : item.is_available ? '86 Dish' : 'Make In Stock'}
               </Button>
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       <ItemModal
         isOpen={isAddItemModalOpen}

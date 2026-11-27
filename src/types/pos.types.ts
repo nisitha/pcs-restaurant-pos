@@ -19,6 +19,7 @@ export interface CartItem {
   variant_name?: string | null;
   modifiers: CartItemModifier[];
   notes?: string | null;
+  image_url?: string | null;
 }
 
 export interface HeldOrder {

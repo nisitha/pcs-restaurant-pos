@@ -80,8 +80,8 @@ export function NavBar() {
                 <UtensilsCrossed className="w-5 h-5" />
               </div>
               <div className="hidden sm:block">
-                <span className="font-extrabold text-base text-white tracking-tight">PCS POS</span>
-                <span className="block text-[10px] text-zinc-400 font-mono">Colombo Branch</span>
+                <span className="font-extrabold text-base text-white tracking-tight">PCS Bill</span>
+                <span className="block text-[10px] text-zinc-400 font-mono">pcsbill.com</span>
               </div>
             </Link>
 

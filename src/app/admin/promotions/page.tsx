@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
   Tag,
   Plus,
@@ -272,7 +273,14 @@ export default function AdminPromotionsPage() {
       </div>
 
       {/* Promotions Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={{
+          visible: { transition: { staggerChildren: 0.03 } },
+        }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
+      >
         {promotions.map((p) => {
           const typeBadgeColor =
             p.promo_type === 'happy_hour'
@@ -282,9 +290,13 @@ export default function AdminPromotionsPage() {
               : 'bg-blue-50 text-blue-600 border-blue-200';
 
           return (
-            <div
+            <motion.div
               key={p.id}
-              className={`bg-white rounded-3xl border p-5 shadow-sm transition flex flex-col justify-between ${
+              variants={{
+                hidden: { opacity: 0, y: 10 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+              }}
+              className={`bg-white rounded-3xl border p-5 shadow-xs hover:shadow-sm transition-all flex flex-col justify-between ${
                 p.is_active ? 'border-[#EBECEF]' : 'border-zinc-200 opacity-60'
               }`}
             >
@@ -383,10 +395,10 @@ export default function AdminPromotionsPage() {
                   <span>Edit</span>
                 </Button>
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* Dialog: Create/Edit Promotion */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

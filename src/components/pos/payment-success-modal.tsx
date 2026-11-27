@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, Printer, X, SlidersHorizontal } from 'lucide-react';
+import { Check, Printer, X, SlidersHorizontal, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatLKR } from '@/lib/utils/currency';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PaymentSuccessModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ interface PaymentSuccessModalProps {
   subtotal?: number;
   serviceCharge?: number;
   tableNumber?: string | null;
+  customerPhone?: string | null;
   onNewOrder: () => void;
 }
 
@@ -37,6 +39,7 @@ export function PaymentSuccessModal({
   subtotal = 0,
   serviceCharge = 0,
   tableNumber,
+  customerPhone,
   onNewOrder,
 }: PaymentSuccessModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -52,11 +55,24 @@ export function PaymentSuccessModal({
     window.print();
   };
 
+  const handleSendWhatsAppEBill = () => {
+    const cleanPhone = (customerPhone || '+94787676576').replace(/[^0-9]/g, '');
+    const itemsText = items
+      .map((i) => `• ${i.quantity}x ${i.name} — ${formatLKR(i.price * i.quantity)}`)
+      .join('\n');
+    const text = encodeURIComponent(
+      `*PCS BILL — E-Receipt*\nOrder: #${orderNumber}${tableNumber ? `\nTable: ${tableNumber}` : ''}\nTime: ${paymentTime}\n\n${itemsText}\n\n*Total Paid: ${formatLKR(totalAmount)}*\nMethod: ${formattedMethod}\n\nThank you for dining with us!\npcsbill.com • Powered by Pixel Craft Studios`
+    );
+    window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank', 'noopener,noreferrer');
+  };
+
   const formattedMethod =
     paymentMethod === 'credit_card'
       ? 'Credit/Debit Card'
+      : paymentMethod === 'whatsapp_ebill'
+      ? 'WhatsApp E-Bill (QR)'
       : paymentMethod === 'qr_payment'
-      ? 'QR Code'
+      ? 'LankaQR'
       : 'Cash';
 
   const computedSubtotal = subtotal > 0 ? subtotal : totalAmount - serviceCharge;
@@ -64,70 +80,102 @@ export function PaymentSuccessModal({
   return (
     <>
       {/* Screen Modal (Hidden during printing via print:hidden) */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm print:hidden animate-in fade-in zoom-in-95">
-        <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-[#EBECEF] text-center relative flex flex-col items-center">
-          {/* Close button */}
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#F6F7F9] text-[#7C828D] hover:text-[#1A1D1F] flex items-center justify-center transition"
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm print:hidden"
+        >
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0, y: 12 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.92, opacity: 0, y: 12 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-[#EBECEF] text-center relative flex flex-col items-center"
           >
-            <X className="w-4 h-4" />
-          </button>
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#F6F7F9] text-[#7C828D] hover:text-[#1A1D1F] flex items-center justify-center transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
 
-          {/* Halo Green Checkmark */}
-          <div className="w-20 h-20 rounded-full bg-[#D1F0DC] text-[#119C49] flex items-center justify-center mb-3 mt-1 shadow-inner">
-            <div className="w-14 h-14 rounded-full bg-[#119C49] text-white flex items-center justify-center shadow-lg shadow-[#119C49]/30">
-              <Check className="w-8 h-8 stroke-[3]" />
-            </div>
-          </div>
+            {/* Halo Green Checkmark with Animated Path */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 20 }}
+              className="w-20 h-20 rounded-full bg-[#cdeeb0] text-[#0f8a5f] flex items-center justify-center mb-3 mt-1 shadow-inner"
+            >
+              <div className="w-14 h-14 rounded-full bg-[#0f8a5f] text-white flex items-center justify-center shadow-lg shadow-[#0f8a5f]/30">
+                <svg
+                  className="w-8 h-8 text-white"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <motion.path
+                    d="M20 6L9 17l-5-5"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ delay: 0.25, duration: 0.35, ease: 'easeOut' }}
+                  />
+                </svg>
+              </div>
+            </motion.div>
 
-          {/* Heading */}
-          <h2 className="text-xl font-extrabold text-[#1A1D1F] tracking-tight">Payment Success!</h2>
-          <p className="text-2xl font-black text-[#119C49] mt-1 font-mono tracking-tight">
-            {formatLKR(totalAmount)}
-          </p>
+            {/* Heading */}
+            <h2 className="font-display text-xl font-extrabold text-[#072619] tracking-tight">Payment Success!</h2>
+            <p className="font-display text-2xl font-black text-[#0f8a5f] mt-1 font-mono tracking-tight">
+              {formatLKR(totalAmount)}
+            </p>
 
           {/* Key-Value Details */}
-          <div className="w-full mt-4 py-3 border-y border-[#F4F5F7] space-y-2 text-xs">
+          <div className="w-full mt-4 py-3 border-y border-[#E5ECE8] space-y-2 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[#7C828D]">Order ID</span>
-              <span className="font-bold text-[#1A1D1F] font-mono">{orderNumber}</span>
+              <span className="text-[#4f675a]">Order ID</span>
+              <span className="font-bold text-[#072619] font-mono">{orderNumber}</span>
             </div>
             {tableNumber && (
               <div className="flex items-center justify-between">
-                <span className="text-[#7C828D]">Table</span>
-                <span className="font-bold text-[#1A1D1F]">Table {tableNumber}</span>
+                <span className="text-[#4f675a]">Table</span>
+                <span className="font-bold text-[#072619]">Table {tableNumber}</span>
               </div>
             )}
             <div className="flex items-center justify-between">
-              <span className="text-[#7C828D]">Payment Method</span>
-              <span className="font-bold text-[#1A1D1F]">{formattedMethod}</span>
+              <span className="text-[#4f675a]">Payment Method</span>
+              <span className="font-bold text-[#072619]">{formattedMethod}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[#7C828D]">Payment Time</span>
-              <span className="font-bold text-[#1A1D1F] font-mono">{paymentTime}</span>
+              <span className="text-[#4f675a]">Payment Time</span>
+              <span className="font-bold text-[#072619] font-mono">{paymentTime}</span>
             </div>
           </div>
 
           {/* Paper Width Selector Pill */}
           <div className="w-full mt-4">
             <div className="flex items-center justify-between mb-1.5 px-1">
-              <span className="text-[11px] font-bold text-[#7C828D] flex items-center gap-1">
-                <SlidersHorizontal className="w-3 h-3 text-[#119C49]" /> Paper Width:
+              <span className="text-[11px] font-bold text-[#4f675a] flex items-center gap-1">
+                <SlidersHorizontal className="w-3 h-3 text-[#0f8a5f]" /> Paper Width:
               </span>
-              <span className="text-[11px] font-semibold text-[#119C49]">
+              <span className="text-[11px] font-semibold text-[#0f8a5f]">
                 {paperWidth === '80mm' ? '80mm (Standard POS)' : '58mm (Mini Portable)'}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F6F7F9] rounded-2xl border border-[#EBECEF]">
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#f4fbf7] rounded-2xl border border-[#E5ECE8]">
               <button
                 type="button"
                 onClick={() => setPaperWidth('80mm')}
                 className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                   paperWidth === '80mm'
-                    ? 'bg-[#119C49] text-white shadow-sm'
-                    : 'text-[#7C828D] hover:text-[#1A1D1F]'
+                    ? 'bg-[#0f8a5f] text-white shadow-sm'
+                    : 'text-[#4f675a] hover:text-[#072619]'
                 }`}
               >
                 <span>80mm Standard</span>
@@ -137,8 +185,8 @@ export function PaymentSuccessModal({
                 onClick={() => setPaperWidth('58mm')}
                 className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                   paperWidth === '58mm'
-                    ? 'bg-[#119C49] text-white shadow-sm'
-                    : 'text-[#7C828D] hover:text-[#1A1D1F]'
+                    ? 'bg-[#0f8a5f] text-white shadow-sm'
+                    : 'text-[#4f675a] hover:text-[#072619]'
                 }`}
               >
                 <span>58mm Compact</span>
@@ -147,27 +195,40 @@ export function PaymentSuccessModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="w-full mt-5 space-y-2.5">
+          <div className="w-full mt-5 space-y-2">
             <Button
               type="button"
               onClick={onNewOrder}
-              className="w-full h-11 bg-[#119C49] hover:bg-[#0E853E] text-white font-bold text-sm rounded-2xl shadow-lg shadow-[#119C49]/20 transition"
+              className="w-full h-11 bg-[#0f8a5f] hover:bg-[#0b6f4c] text-white font-bold text-sm rounded-2xl shadow-lg shadow-[#0f8a5f]/20 transition"
             >
               New Order
             </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePrintReceipt}
-              className="w-full h-11 bg-white hover:bg-[#F6F7F9] border border-[#EBECEF] text-[#119C49] font-bold text-sm rounded-2xl gap-2 transition"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Print Receipt ({paperWidth})</span>
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrintReceipt}
+                className="h-10 bg-white hover:bg-[#f4fbf7] border border-[#E5ECE8] text-[#072619] font-bold text-xs rounded-2xl gap-1.5 transition"
+              >
+                <Printer className="w-3.5 h-3.5 text-[#0f8a5f]" />
+                <span>Print ({paperWidth})</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSendWhatsAppEBill}
+                className="h-10 bg-[#cdeeb0]/40 hover:bg-[#cdeeb0] border border-[#0f8a5f]/25 text-[#072619] font-bold text-xs rounded-2xl gap-1.5 transition"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-[#0f8a5f]" />
+                <span>WhatsApp E-Bill</span>
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
 
       {/* 
         Isolated Thermal Receipt Portal
@@ -183,16 +244,13 @@ export function PaymentSuccessModal({
             {/* Header / Brand */}
             <div style={{ textAlign: 'center', marginBottom: '8px' }}>
               <div style={{ fontWeight: 'bold', fontSize: paperWidth === '80mm' ? '15px' : '12px' }}>
-                PCS RESTAURANT POS
+                PCS BILL
               </div>
               <div style={{ fontSize: paperWidth === '80mm' ? '11px' : '9px' }}>
-                Main Branch - Colombo
+                pcsbill.com &bull; Colombo Branch
               </div>
               <div style={{ fontSize: paperWidth === '80mm' ? '10px' : '9px' }}>
-                123 Galle Road, Colombo 03, Sri Lanka
-              </div>
-              <div style={{ fontSize: paperWidth === '80mm' ? '10px' : '9px' }}>
-                Tel: +94 11 234 5678
+                Hotline / WhatsApp: +94 78 76 76 576
               </div>
             </div>
 
@@ -375,7 +433,7 @@ export function PaymentSuccessModal({
               </div>
               <div>Please visit us again</div>
               <div style={{ fontSize: paperWidth === '80mm' ? '9px' : '7.5px', color: '#333333', marginTop: '4px' }}>
-                Software by PCS POS Systems
+                Powered by Pixel Craft Studios &bull; pcsbill.com
               </div>
             </div>
           </div>,

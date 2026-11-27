@@ -19,14 +19,17 @@ import {
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DishImage } from '@/components/ui/dish-image';
 
 interface MenuItem {
   id: string;
   name: string;
   description?: string;
   base_price: number;
+  image_url?: string;
   category_id: string;
   is_available: boolean;
 }
@@ -42,6 +45,7 @@ interface CartItem {
   name: string;
   unit_price: number;
   quantity: number;
+  image_url?: string;
 }
 
 export default function OnlineOrderingPage() {
@@ -94,6 +98,7 @@ export default function OnlineOrderingPage() {
           name: item.name,
           unit_price: Number(item.base_price),
           quantity: 1,
+          image_url: item.image_url,
         },
       ];
     });
@@ -182,11 +187,11 @@ export default function OnlineOrderingPage() {
               <Utensils className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base font-extrabold text-[#1A1D1F] leading-tight">
-                PCS Restaurant Online
+              <h1 className="font-display text-base font-extrabold text-[#072619] leading-tight">
+                PCS Bill Online
               </h1>
-              <p className="text-xs text-[#7C828D]">
-                Fresh, hot meals delivered to your doorstep
+              <p className="text-xs text-[#4f675a]">
+                Fresh, hot meals delivered • +94 78 76 76 576
               </p>
             </div>
           </div>
@@ -309,32 +314,55 @@ export default function OnlineOrderingPage() {
         </div>
 
         {/* Menu Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: { transition: { staggerChildren: 0.025 } },
+          }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+        >
           {filteredItems.map((item) => (
-            <div
+            <motion.div
               key={item.id}
-              className="bg-white rounded-3xl p-4 border border-[#EBECEF] flex items-center justify-between gap-3 shadow-2xs hover:shadow-sm transition-shadow"
+              variants={{
+                hidden: { opacity: 0, y: 10 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+              }}
+              className="bg-white rounded-3xl p-3.5 border border-[#EBECEF] flex items-center justify-between gap-3 shadow-2xs hover:shadow-sm transition-all"
             >
+              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shrink-0 bg-[#F6F7F9] shadow-2xs">
+                <DishImage
+                  src={item.image_url}
+                  alt={item.name}
+                  category={categories.find((c) => c.id === item.category_id)?.name || item.name}
+                  aspectRatio="square"
+                  className="w-full h-full"
+                />
+              </div>
+
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-extrabold text-[#1A1D1F] truncate">{item.name}</h4>
                 {item.description && (
                   <p className="text-xs text-[#7C828D] line-clamp-1 mt-0.5">{item.description}</p>
                 )}
-                <p className="text-sm font-black text-[#119C49] mt-2">
+                <p className="text-sm font-black text-[#119C49] mt-1.5">
                   Rs. {Number(item.base_price).toLocaleString()}
                 </p>
               </div>
 
-              <Button
-                onClick={() => handleAddToCart(item)}
-                className="h-9 px-3 rounded-2xl bg-[#D1F0DC] hover:bg-[#119C49] text-[#119C49] hover:text-white font-extrabold text-xs flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add</span>
-              </Button>
-            </div>
+              <motion.div whileTap={{ scale: 0.92 }} className="shrink-0">
+                <Button
+                  onClick={() => handleAddToCart(item)}
+                  className="h-9 px-3.5 rounded-2xl bg-[#D1F0DC] hover:bg-[#119C49] text-[#119C49] hover:text-white font-extrabold text-xs flex items-center gap-1 shadow-2xs transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add</span>
+                </Button>
+              </motion.div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </main>
 
       {/* Floating Bottom Cart Bar */}
@@ -380,9 +408,18 @@ export default function OnlineOrderingPage() {
           {/* Cart Items */}
           <div className="py-3 space-y-2.5 max-h-48 overflow-y-auto">
             {cart.map((item) => (
-              <div key={item.cart_id} className="bg-[#F6F7F9] p-3 rounded-2xl flex items-center justify-between">
-                <div>
-                  <h5 className="text-xs font-extrabold text-[#1A1D1F]">{item.name}</h5>
+              <div key={item.cart_id} className="bg-[#F6F7F9] p-2.5 rounded-2xl flex items-center justify-between gap-3">
+                <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 bg-white border border-[#EBECEF]">
+                  <DishImage
+                    src={item.image_url}
+                    alt={item.name}
+                    category={item.name}
+                    aspectRatio="square"
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h5 className="text-xs font-extrabold text-[#1A1D1F] truncate">{item.name}</h5>
                   <p className="text-xs font-bold text-[#119C49]">
                     Rs. {(item.unit_price * item.quantity).toLocaleString()}
                   </p>

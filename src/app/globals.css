@@ -3,58 +3,73 @@
 @import "shadcn/tailwind.css";
 
 @theme inline {
-  --font-sans: var(--font-sans), 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-jakarta), 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-bricolage), 'Bricolage Grotesque', var(--font-jakarta), sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
-  
-  --color-canvas: #F6F7F9;
+
+  --color-canvas: #f4fbf7;
   --color-panel: #FFFFFF;
-  --color-brand-green: #119C49;
-  --color-brand-green-hover: #0E853E;
-  --color-brand-mint: #D1F0DC;
-  --color-brand-mint-light: #D8F3E2;
-  --color-brand-mint-soft: #C6ECD4;
+  --color-deep-forest: #072619;
+  --color-brand-green: #0f8a5f;
+  --color-brand-green-hover: #0b6f4c;
+  --color-brand-lime: #a3e04f;
+  --color-brand-mint: #cdeeb0;
+  --color-brand-mint-light: #f4fbf7;
+  --color-brand-mint-soft: #d7efe1;
   --color-brand-amber: #F59E0B;
   --color-brand-peach: #FEF3E2;
-  --color-text-dark: #1A1D1F;
-  --color-text-muted: #7C828D;
-  --color-border-subtle: #EBECEF;
+  --color-text-dark: #072619;
+  --color-text-muted: #4f675a;
+  --color-border-subtle: #E5ECE8;
 }
 
 :root {
-  --background: #F6F7F9;
-  --foreground: #1A1D1F;
+  --background: #f4fbf7;
+  --foreground: #072619;
   --card: #FFFFFF;
-  --card-foreground: #1A1D1F;
+  --card-foreground: #072619;
   --popover: #FFFFFF;
-  --popover-foreground: #1A1D1F;
-  --primary: #119C49;
+  --popover-foreground: #072619;
+  --primary: #0f8a5f;
   --primary-foreground: #FFFFFF;
-  --secondary: #D1F0DC;
-  --secondary-foreground: #119C49;
-  --muted: #F4F5F7;
-  --muted-foreground: #7C828D;
-  --accent: #D1F0DC;
-  --accent-foreground: #119C49;
+  --secondary: #cdeeb0;
+  --secondary-foreground: #072619;
+  --muted: #eaf5ee;
+  --muted-foreground: #4f675a;
+  --accent: #cdeeb0;
+  --accent-foreground: #072619;
   --destructive: #EF4444;
-  --border: #EBECEF;
-  --input: #EBECEF;
-  --ring: #119C49;
+  --border: #E5ECE8;
+  --input: #E5ECE8;
+  --ring: #0f8a5f;
   --radius: 0.75rem;
+
+  /* PCS Bill OS Custom Variables */
+  --pcs-deep-forest: #072619;
+  --pcs-emerald: #0f8a5f;
+  --pcs-emerald-hover: #0b6f4c;
+  --pcs-lime: #a3e04f;
+  --pcs-mint-surface: #f4fbf7;
+  --pcs-mint-highlight: #cdeeb0;
+  --pcs-border: #E5ECE8;
 }
 
 @layer base {
   * {
-    border-color: var(--border, #EBECEF);
+    border-color: var(--border, #E5ECE8);
   }
   body {
-    background-color: #F6F7F9;
-    color: #1A1D1F;
+    background-color: #f4fbf7;
+    color: #072619;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
   html {
     font-family: var(--font-sans);
+  }
+  h1, h2, .font-display {
+    font-family: var(--font-display);
   }
 }
 

@@ -15,6 +15,7 @@ import { MenuItem, ItemVariant, Modifier } from '@/types/menu.types';
 import { CartItem, CartItemModifier } from '@/types/pos.types';
 import { formatLKR } from '@/lib/utils/currency';
 import { Plus, Check, Utensils, Sparkles } from 'lucide-react';
+import { DishImage } from '@/components/ui/dish-image';
 
 interface ItemCustomizerModalProps {
   isOpen: boolean;
@@ -86,6 +87,7 @@ export function ItemCustomizerModal({
       variant_name: selectedVariant?.variant_name || null,
       modifiers: cartModifiers,
       notes: itemNotes.trim() || null,
+      image_url: item.image_url,
     });
 
     onOpenChange(false);
@@ -94,23 +96,35 @@ export function ItemCustomizerModal({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="bg-white border-[#EBECEF] text-[#1A1D1F] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl">
-        <DialogHeader className="pr-10">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-baseline justify-between gap-3">
-              <DialogTitle className="text-xl font-black text-[#1A1D1F] tracking-tight">{item.name}</DialogTitle>
-              <span className="text-lg font-black text-[#119C49] whitespace-nowrap">
-                {formatLKR(itemTotalPrice)}
-              </span>
+        <DialogHeader className="pr-12">
+          <div className="flex items-center gap-3.5">
+            <div className="w-[72px] h-[72px] rounded-2xl overflow-hidden shrink-0 border border-[#EBECEF] shadow-xs">
+              <DishImage
+                src={item.image_url}
+                alt={item.name}
+                aspectRatio="square"
+                className="w-full h-full"
+              />
             </div>
-            {item.description ? (
-              <DialogDescription className="text-xs text-[#7C828D] leading-relaxed">
-                {item.description}
-              </DialogDescription>
-            ) : (
-              <DialogDescription className="text-xs text-[#7C828D]">
-                Customize your order options and portion size below.
-              </DialogDescription>
-            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <DialogTitle className="text-base sm:text-lg font-black text-[#1A1D1F] tracking-tight leading-snug line-clamp-2">
+                  {item.name}
+                </DialogTitle>
+                <span className="text-base font-black text-[#119C49] whitespace-nowrap font-mono shrink-0">
+                  {formatLKR(itemTotalPrice)}
+                </span>
+              </div>
+              {item.description ? (
+                <DialogDescription className="text-xs text-[#7C828D] leading-relaxed line-clamp-2 mt-1">
+                  {item.description}
+                </DialogDescription>
+              ) : (
+                <DialogDescription className="text-xs text-[#7C828D] mt-1">
+                  Customize portion and preferences.
+                </DialogDescription>
+              )}
+            </div>
           </div>
         </DialogHeader>
 

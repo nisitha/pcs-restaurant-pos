@@ -1,24 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Search,
-  SlidersHorizontal,
   Plus,
   Minus,
   UtensilsCrossed,
   ShoppingBag,
-  Truck,
-  Edit2,
   Trash2,
   Wallet,
   CreditCard,
   QrCode,
   PauseCircle,
-  Play,
-  CheckCircle2,
   AlertCircle,
   Flame,
   Coffee,
@@ -28,10 +21,18 @@ import {
   Sandwich,
   Utensils,
   Layers,
-  Sparkles,
   Leaf,
   Beef,
-  CircleDot,
+  Users,
+  Award,
+  Tag,
+  Lock,
+  Percent,
+  MapPin,
+  MessageCircle,
+  Printer,
+  Grid3X3,
+  BookmarkPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
@@ -48,6 +49,8 @@ import { TablePickerModal } from '@/components/pos/table-picker-modal';
 import { HoldOrdersModal } from '@/components/pos/hold-orders-modal';
 import { PaymentSuccessModal } from '@/components/pos/payment-success-modal';
 import { CustomerPickerModal } from '@/components/pos/customer-picker-modal';
+import { DishImage } from '@/components/ui/dish-image';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -57,15 +60,17 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Users, Award, Tag, Lock, ShieldCheck, Percent } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
+type PosTenderMethod = 'cash' | 'credit_card' | 'qr_payment' | 'whatsapp_ebill';
+
 export default function PosBillingPage() {
-  const router = useRouter();
-  const { currentUser, isAuthenticated } = useAuthStore();
+  const { currentUser } = useAuthStore();
   const { activeShift, hasActiveShift } = useShiftStore();
-  const { activeBranchId } = useBranchStore();
+  const { activeBranchId, activeBranch } = useBranchStore();
   const { categories, items, fetchMenu } = useMenuStore();
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const {
     orderType,
@@ -78,7 +83,6 @@ export default function PosBillingPage() {
     customerLoyaltyPoints,
     loyaltyPointsToRedeem,
     activePromoId,
-    activePromoName,
     deliveryAddress,
     deliveryFee,
     discountAmount,
@@ -88,13 +92,10 @@ export default function PosBillingPage() {
     heldOrders,
     setOrderType,
     setTable,
-    setCustomer,
     setCustomerDetails,
     setRedeemLoyaltyPoints,
     setActivePromotion,
-    setDeliveryFee,
     setDiscount,
-    setOrderNotes,
     addItem,
     updateItemQuantity,
     removeItem,
@@ -119,7 +120,7 @@ export default function PosBillingPage() {
   const [managerPinError, setManagerPinError] = useState<string | null>(null);
 
   // Payment state
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'credit_card' | 'qr_payment'>('cash');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PosTenderMethod>('cash');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -133,6 +134,7 @@ export default function PosBillingPage() {
     subtotal: 0,
     serviceCharge: 0,
     tableNumber: null as string | null,
+    customerPhone: null as string | null,
     items: [] as Array<{ name: string; quantity: number; price: number }>,
   });
 
@@ -150,7 +152,19 @@ export default function PosBillingPage() {
     kds_status: string;
   }>>([]);
 
-  // Fetch Live Orders for Bottom Strip
+  // Quick Search `/` Keyboard Shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Fetch Live Orders for Top Queue Bar
   const fetchLiveOrders = useCallback(async () => {
     try {
       const supabase = createClient();
@@ -165,10 +179,10 @@ export default function PosBillingPage() {
           dining_tables (table_number),
           order_items (id, quantity)
         `)
-        .eq('branch_id', '00000000-0000-0000-0000-000000000001')
+        .eq('branch_id', activeBranchId || '00000000-0000-0000-0000-000000000001')
         .in('kds_status', ['submitted', 'in_preparation', 'partially_ready', 'ready'])
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(8);
 
       if (data) {
         const formatted = data.map((o: any) => ({
@@ -182,9 +196,9 @@ export default function PosBillingPage() {
         setLiveOrders(formatted);
       }
     } catch (e) {
-      console.warn('Error fetching live kitchen orders for bottom strip:', e);
+      console.warn('Error fetching live kitchen orders:', e);
     }
-  }, []);
+  }, [activeBranchId]);
 
   useEffect(() => {
     fetchMenu();
@@ -192,7 +206,7 @@ export default function PosBillingPage() {
 
     const supabase = createClient();
     const channel = supabase
-      .channel('pos-live-bottom-strip')
+      .channel('pos-live-kitchen-queue')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         fetchLiveOrders();
       })
@@ -233,9 +247,8 @@ export default function PosBillingPage() {
       .reduce((sum, i) => sum + i.quantity, 0);
   };
 
-  // Quick Add Item
+  // 1-Tap Quick Add (Opens ItemCustomizerModal only when variants/modifiers exist)
   const handleQuickAdd = (item: MenuItem) => {
-    // If item has variants or modifier groups, open customizer modal
     const hasVariants = item.variants && item.variants.length > 0;
     const hasModifiers = item.modifier_groups && item.modifier_groups.length > 0;
 
@@ -252,14 +265,15 @@ export default function PosBillingPage() {
       quantity: 1,
       station_id: item.default_station_id,
       modifiers: [],
+      image_url: item.image_url,
     });
   };
 
-  // Decrement Item in Cart
+  // Fixed Decrement by 1
   const handleDecrement = (menuItemId: string) => {
     const cartItem = cartItems.find((i) => i.menu_item_id === menuItemId);
     if (!cartItem) return;
-    updateItemQuantity(cartItem.cart_item_id, cartItem.quantity - 1);
+    updateItemQuantity(cartItem.cart_item_id, -1);
   };
 
   // Auto-evaluate Happy-Hour and Combo Promotions
@@ -308,8 +322,7 @@ export default function PosBillingPage() {
       return;
     }
 
-    const discountRatio = sub > 0 ? (discountVal / sub) : 0;
-    // If discount exceeds 10%, require Manager (2222) or Owner (1111) PIN
+    const discountRatio = sub > 0 ? discountVal / sub : 0;
     if (discountRatio > 0.10) {
       if (managerPinInput !== '2222' && managerPinInput !== '1111') {
         setManagerPinError('Discounts over 10% require Manager (2222) or Owner (1111) PIN authorization');
@@ -324,13 +337,16 @@ export default function PosBillingPage() {
   };
 
   // Submit Order & Settle Payment
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (overrideMethod?: PosTenderMethod) => {
     if (cartItems.length === 0) return;
 
     if (orderType === 'dine_in' && !tableId) {
       setIsTablePickerOpen(true);
       return;
     }
+
+    const tenderChoice = overrideMethod || selectedPaymentMethod;
+    const dbPaymentMethod = tenderChoice === 'whatsapp_ebill' ? 'qr_payment' : tenderChoice;
 
     try {
       setIsSubmitting(true);
@@ -352,9 +368,10 @@ export default function PosBillingPage() {
         deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
         deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
         discountAmount: discountAmount + (loyaltyPointsToRedeem || 0),
-        discountReason: loyaltyPointsToRedeem > 0
-          ? `${discountReason ? discountReason + ' + ' : ''}Redeemed ${loyaltyPointsToRedeem} pts`
-          : (discountReason || undefined),
+        discountReason:
+          loyaltyPointsToRedeem > 0
+            ? `${discountReason ? discountReason + ' + ' : ''}Redeemed ${loyaltyPointsToRedeem} pts`
+            : discountReason || undefined,
         loyaltyPointsRedeemed: loyaltyPointsToRedeem || 0,
         promotionId: activePromoId || undefined,
         notes: orderNotes || undefined,
@@ -379,11 +396,12 @@ export default function PosBillingPage() {
           orderNumber: tempOrderNum,
           orderId: tempOrderNum,
           totalAmount: getTotal(),
-          paymentMethod: selectedPaymentMethod,
+          paymentMethod: tenderChoice,
           paymentTime: new Date().toLocaleTimeString(),
           subtotal: getSubtotal(),
           serviceCharge: getServiceCharge(),
           tableNumber: tableNumber || null,
+          customerPhone: customerPhone || null,
           items: cartItems.map((i) => ({
             name: i.item_name,
             quantity: i.quantity,
@@ -411,7 +429,7 @@ export default function PosBillingPage() {
       const orderTotal = Number(orderData.totalAmount || getTotal());
 
       // 2. Settle Payment Immediately
-      const paymentRes = await fetch('/api/payments/settle', {
+      await fetch('/api/payments/settle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -420,15 +438,18 @@ export default function PosBillingPage() {
           shiftId,
           payments: [
             {
-              method: selectedPaymentMethod,
+              method: dbPaymentMethod,
               amount: orderTotal,
-              transactionRef: selectedPaymentMethod !== 'cash' ? `TX-${Date.now().toString().slice(-6)}` : undefined,
+              transactionRef:
+                tenderChoice === 'whatsapp_ebill'
+                  ? `WA-EBILL-${Date.now().toString().slice(-6)}`
+                  : dbPaymentMethod !== 'cash'
+                  ? `TX-${Date.now().toString().slice(-6)}`
+                  : undefined,
             },
           ],
         }),
       });
-
-      const paymentData = await paymentRes.json();
 
       // 3. Set Success State & Open Modal
       const nowFormatted = new Date().toLocaleString('en-GB', {
@@ -443,11 +464,12 @@ export default function PosBillingPage() {
         orderNumber: createdOrderNumber,
         orderId: createdOrderId,
         totalAmount: orderTotal,
-        paymentMethod: selectedPaymentMethod,
+        paymentMethod: tenderChoice,
         paymentTime: nowFormatted,
         subtotal: getSubtotal(),
         serviceCharge: getServiceCharge(),
         tableNumber: tableNumber || null,
+        customerPhone: customerPhone || null,
         items: cartItems.map((i) => ({
           name: i.item_name,
           quantity: i.quantity,
@@ -455,7 +477,6 @@ export default function PosBillingPage() {
         })),
       });
 
-      // Clear cart
       clearCart();
       setIsPaymentSuccessOpen(true);
       fetchLiveOrders();
@@ -470,455 +491,545 @@ export default function PosBillingPage() {
   const subtotal = getSubtotal();
   const serviceCharge = getServiceCharge();
   const total = getTotal();
+  const activeBranchName = activeBranch?.name || 'Colombo Main';
 
   return (
-    <div className="flex-1 flex h-full overflow-hidden bg-[#F6F7F9]">
+    <div className="flex-1 flex h-full overflow-hidden bg-[#f4fbf7]">
       {/* ========================================================================= */}
-      {/* CENTER WORKSPACE: Search + Categories + 3-Col Product Grid + Bottom Strip */}
+      {/* CENTER COUNTER WORKSPACE                                                   */}
       {/* ========================================================================= */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {/* Top Header Bar */}
-        <header className="p-4 pb-2 flex items-center justify-between gap-3 bg-[#F6F7F9] shrink-0">
-          {/* Wide Rounded-Full Search Input */}
-          <div className="relative flex-1 max-w-xl">
-            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#7C828D]" />
-            <input
-              type="text"
-              placeholder="Search Product here..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pl-11 pr-4 rounded-full bg-white border border-[#EBECEF] text-xs font-semibold text-[#1A1D1F] placeholder-[#7C828D] shadow-sm focus:outline-none focus:border-[#119C49] focus:ring-1 focus:ring-[#119C49]"
-            />
-          </div>
+        {/* Top Compact POS Bar */}
+        <header className="px-4 pt-3 pb-2 bg-white border-b border-[#E5ECE8] shrink-0 space-y-2 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            {/* Left: Branch Pill + Shift & Drawer Status */}
+            <div className="flex items-center gap-2">
+              <div className="h-9 px-3 rounded-xl bg-[#072619] text-white flex items-center gap-1.5 text-xs font-bold shadow-2xs">
+                <MapPin className="w-3.5 h-3.5 text-[#a3e04f]" />
+                <span className="truncate max-w-[130px]">{activeBranchName}</span>
+              </div>
 
-          {/* Right Action Icons: Filter & Parked Orders */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="w-12 h-12 rounded-full bg-white border border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] flex items-center justify-center shadow-sm transition hover:bg-[#F4F5F7]"
-              title="Filters"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-            </button>
+              <div
+                className={`h-9 px-3 rounded-xl border flex items-center gap-2 text-xs font-bold ${
+                  hasActiveShift && activeShift
+                    ? 'bg-[#cdeeb0]/40 border-[#0f8a5f]/25 text-[#072619]'
+                    : 'bg-amber-50 border-amber-200 text-amber-800'
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    hasActiveShift && activeShift ? 'bg-[#0f8a5f] animate-pulse' : 'bg-amber-500'
+                  }`}
+                />
+                {hasActiveShift && activeShift ? (
+                  <span className="font-mono">{formatLKR(activeShift.expected_cash)}</span>
+                ) : (
+                  <span>No Shift</span>
+                )}
+              </div>
+            </div>
 
-            {/* Hold Orders Button */}
-            <button
-              type="button"
-              onClick={() => setIsHoldOrdersOpen(true)}
-              className="h-12 px-4 rounded-full bg-white border border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F] flex items-center gap-2 text-xs font-bold shadow-sm transition hover:bg-[#F4F5F7]"
-              title="Parked / Held Orders"
-            >
-              <PauseCircle className="w-4 h-4 text-[#F59E0B]" />
-              <span className="hidden sm:inline">Parked</span>
-              {heldOrders.length > 0 && (
-                <span className="w-5 h-5 rounded-full bg-[#FEF3E2] text-[#F59E0B] font-bold text-[10px] flex items-center justify-center">
+            {/* Center: Quick Search with `/` Shortcut */}
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4f675a]" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search menu items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-9 pl-9 pr-12 rounded-xl bg-[#f4fbf7] border border-[#E5ECE8] text-xs font-semibold text-[#072619] placeholder-[#4f675a]/70 focus:outline-none focus:border-[#0f8a5f] focus:bg-white focus:ring-2 focus:ring-[#0f8a5f]/15 transition"
+              />
+              <kbd className="hidden sm:inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#4f675a] bg-white border border-[#E5ECE8] rounded-md absolute right-2.5 top-1/2 -translate-y-1/2">
+                /
+              </kbd>
+            </div>
+
+            {/* Right: Park Cart + Hold Orders Badge */}
+            <div className="flex items-center gap-2">
+              {cartItems.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => holdCurrentOrder()}
+                  className="h-9 px-3 rounded-xl bg-[#f4fbf7] hover:bg-[#cdeeb0]/50 border border-[#E5ECE8] text-[#072619] flex items-center gap-1.5 text-xs font-bold transition cursor-pointer"
+                  title="Park current cart to Hold queue"
+                >
+                  <BookmarkPlus className="w-3.5 h-3.5 text-[#0f8a5f]" />
+                  <span className="hidden xl:inline">Park</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsHoldOrdersOpen(true)}
+                className="h-9 px-3 rounded-xl bg-white hover:bg-[#f4fbf7] border border-[#E5ECE8] text-[#072619] flex items-center gap-1.5 text-xs font-bold transition cursor-pointer"
+                title="Open Parked / Held Orders"
+              >
+                <PauseCircle className="w-4 h-4 text-[#F59E0B]" />
+                <span className="hidden sm:inline">Held</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-black ${
+                    heldOrders.length > 0 ? 'bg-[#FEF3E2] text-[#B45309]' : 'bg-[#f4fbf7] text-[#4f675a]'
+                  }`}
+                >
                   {heldOrders.length}
                 </span>
-              )}
-            </button>
+              </button>
+            </div>
+          </div>
+
+          {/* Live Kitchen Queue Ticker Strip */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#4f675a] whitespace-nowrap shrink-0 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0f8a5f] animate-pulse" />
+              Live Kitchen:
+            </span>
+            {liveOrders.length === 0 ? (
+              <span className="text-[11px] text-[#4f675a]/70">No active tickets in prep</span>
+            ) : (
+              <AnimatePresence>
+                {liveOrders.map((ord) => (
+                  <motion.div
+                    key={ord.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.85 }}
+                    className="px-2.5 py-1 rounded-full bg-[#f4fbf7] border border-[#E5ECE8] flex items-center gap-2 shrink-0"
+                  >
+                    <span className="w-5 h-5 rounded-full bg-[#072619] text-[#a3e04f] font-extrabold text-[10px] flex items-center justify-center">
+                      {ord.table_number || ord.order_number.slice(-2)}
+                    </span>
+                    <span className="text-[11px] font-bold text-[#072619] truncate max-w-[100px]">
+                      {ord.customer_name || ord.order_number}
+                    </span>
+                    <span className="text-[10px] text-[#4f675a] font-mono">{ord.items_count}x</span>
+                    <span
+                      className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full uppercase ${
+                        ord.kds_status === 'ready'
+                          ? 'bg-[#cdeeb0] text-[#072619]'
+                          : 'bg-[#FEF3E2] text-[#B45309]'
+                      }`}
+                    >
+                      {ord.kds_status === 'ready' ? 'Ready' : 'Prep'}
+                    </span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            )}
           </div>
         </header>
 
-        {/* Horizontal Category Cards */}
-        <div className="px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-none shrink-0">
-          {/* Card: All */}
+        {/* Sleek Horizontal Category Pill Tabs with Framer Motion layoutId */}
+        <div className="px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 border-b border-[#E5ECE8]/70 bg-[#f4fbf7]">
           <button
             type="button"
             onClick={() => setSelectedCategory('all')}
-            className={`min-w-[110px] p-3 rounded-2xl border transition-all text-left flex flex-col justify-between shadow-sm shrink-0 ${
+            className={`relative px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
               selectedCategory === 'all'
-                ? 'bg-[#D1F0DC] border-[#BDE8CB] text-[#119C49]'
-                : 'bg-white border-[#EBECEF] text-[#1A1D1F] hover:border-[#119C49]/40'
+                ? 'text-white'
+                : 'bg-white border border-[#E5ECE8] text-[#4f675a] hover:text-[#072619]'
             }`}
           >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-2 ${
-              selectedCategory === 'all' ? 'bg-[#119C49] text-white' : 'bg-[#F4F5F7] text-[#7C828D]'
-            }`}>
-              <Layers className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold leading-tight">All</p>
-              <p className={`text-[10px] ${selectedCategory === 'all' ? 'text-[#119C49]' : 'text-[#7C828D]'}`}>
-                {items.length} Items
-              </p>
-            </div>
+            {selectedCategory === 'all' && (
+              <motion.div
+                layoutId="active-pos-category"
+                className="absolute inset-0 bg-[#0f8a5f] rounded-full shadow-sm shadow-[#0f8a5f]/25"
+                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+              />
+            )}
+            <Layers className={`relative z-10 w-3.5 h-3.5 ${selectedCategory === 'all' ? 'text-[#a3e04f]' : ''}`} />
+            <span className="relative z-10">All</span>
+            <span
+              className={`relative z-10 px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${
+                selectedCategory === 'all' ? 'bg-white/20 text-white' : 'bg-[#f4fbf7] text-[#4f675a]'
+              }`}
+            >
+              {items.filter((i) => i.is_available).length}
+            </span>
           </button>
 
-          {/* Category Cards from DB */}
           {categories.map((cat) => {
             const Icon = getCategoryIcon(cat.name);
             const isSelected = selectedCategory === cat.id;
-            const categoryItemCount = items.filter((i) => i.category_id === cat.id).length;
+            const categoryItemCount = items.filter((i) => i.category_id === cat.id && i.is_available).length;
 
             return (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`min-w-[115px] p-3 rounded-2xl border transition-all text-left flex flex-col justify-between shadow-sm shrink-0 ${
+                className={`relative px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
                   isSelected
-                    ? 'bg-[#D1F0DC] border-[#BDE8CB] text-[#119C49]'
-                    : 'bg-white border-[#EBECEF] text-[#1A1D1F] hover:border-[#119C49]/40'
+                    ? 'text-white'
+                    : 'bg-white border border-[#E5ECE8] text-[#4f675a] hover:text-[#072619]'
                 }`}
               >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-2 ${
-                  isSelected ? 'bg-[#119C49] text-white' : 'bg-[#F4F5F7] text-[#7C828D]'
-                }`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold leading-tight truncate">{cat.name}</p>
-                  <p className={`text-[10px] ${isSelected ? 'text-[#119C49]' : 'text-[#7C828D]'}`}>
-                    {categoryItemCount} Items
-                  </p>
-                </div>
+                {isSelected && (
+                  <motion.div
+                    layoutId="active-pos-category"
+                    className="absolute inset-0 bg-[#0f8a5f] rounded-full shadow-sm shadow-[#0f8a5f]/25"
+                    transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                  />
+                )}
+                <Icon className={`relative z-10 w-3.5 h-3.5 ${isSelected ? 'text-[#a3e04f]' : ''}`} />
+                <span className="relative z-10 whitespace-nowrap">{cat.name}</span>
+                <span
+                  className={`relative z-10 px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-[#f4fbf7] text-[#4f675a]'
+                  }`}
+                >
+                  {categoryItemCount}
+                </span>
               </button>
             );
           })}
         </div>
 
-        {/* 3-Column Product Grid (Scrollable) */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 pb-24 scrollbar-none">
+        {/* Dish Grid (Scrollable) */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 pb-6 scrollbar-none">
           {errorMessage && (
-            <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-xs flex items-center gap-2">
+            <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {filteredItems.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center p-6 bg-white rounded-3xl border border-[#EBECEF]">
-              <UtensilsCrossed className="w-10 h-10 text-[#7C828D]/50 mb-2" />
-              <p className="text-sm font-bold text-[#1A1D1F]">No Menu Items Found</p>
-              <p className="text-xs text-[#7C828D]">Try selecting another category or searching differently.</p>
+            <div className="h-64 flex flex-col items-center justify-center text-center p-6 bg-white rounded-3xl border border-[#E5ECE8]">
+              <UtensilsCrossed className="w-10 h-10 text-[#4f675a]/40 mb-2" />
+              <p className="text-sm font-bold text-[#072619]">No Menu Items Found</p>
+              <p className="text-xs text-[#4f675a]">Try selecting another category or clearing your search.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredItems.map((item, idx) => {
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                visible: { transition: { staggerChildren: 0.02 } },
+              }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5"
+            >
+              {filteredItems.map((item) => {
                 const cartQty = getItemCartQuantity(item.id);
                 const isInCart = cartQty > 0;
-                const isVeg = item.name.toLowerCase().includes('salad') || item.name.toLowerCase().includes('veg') || item.name.toLowerCase().includes('latte') || item.name.toLowerCase().includes('coffee') || item.name.toLowerCase().includes('cake');
-                const hasDiscount = idx % 3 === 0; // decorative 20% off badge on select items matching mockup
+                const isVeg =
+                  item.name.toLowerCase().includes('salad') ||
+                  item.name.toLowerCase().includes('veg') ||
+                  item.name.toLowerCase().includes('latte') ||
+                  item.name.toLowerCase().includes('coffee') ||
+                  item.name.toLowerCase().includes('cake');
+                const hasCustom =
+                  (item.variants && item.variants.length > 0) ||
+                  (item.modifier_groups && item.modifier_groups.length > 0);
+                const matchedCategory = categories.find((c) => c.id === item.category_id)?.name;
 
                 return (
-                  <div
+                  <motion.div
                     key={item.id}
-                    className={`rounded-2xl p-3 bg-white border transition-all duration-200 shadow-sm flex flex-col justify-between relative group ${
+                    variants={{
+                      hidden: { opacity: 0, y: 8 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
+                    }}
+                    className={`rounded-2xl p-2.5 bg-white border transition-all duration-150 flex flex-col justify-between relative group ${
                       isInCart
-                        ? 'border-2 border-[#119C49] shadow-md shadow-[#119C49]/10'
-                        : 'border-[#EBECEF] hover:border-[#119C49]/40 hover:shadow-md'
+                        ? 'border-2 border-[#0f8a5f] shadow-md shadow-[#0f8a5f]/10'
+                        : 'border-[#E5ECE8] hover:border-[#0f8a5f]/50 shadow-2xs hover:shadow-md'
                     }`}
                   >
-                    {/* Top Dish Image + Optional Discount Badge */}
-                    <div className="relative w-full h-36 rounded-xl overflow-hidden bg-[#F4F5F7] mb-3">
-                      {item.image_url ? (
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-[#7C828D] bg-gradient-to-br from-[#F8F9FA] to-[#EDF0F3]">
-                          <UtensilsCrossed className="w-8 h-8 mb-1 text-[#119C49]/40" />
-                          <span className="text-[10px] font-bold text-[#7C828D]">Freshly Prepared</span>
-                        </div>
-                      )}
+                    {/* Top 4:3 Dish Photo + Bold LKR Price Badge + Stock Dot */}
+                    <div
+                      onClick={() => handleQuickAdd(item)}
+                      className="relative w-full rounded-xl overflow-hidden mb-2.5 cursor-pointer"
+                    >
+                      <DishImage
+                        src={item.image_url}
+                        alt={item.name}
+                        category={matchedCategory}
+                        aspectRatio="4/3"
+                        className="w-full rounded-xl"
+                      />
 
-                      {/* 20% Off Badge */}
-                      {hasDiscount && (
-                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F59E0B] text-white shadow-sm">
-                          20% Off
-                        </span>
-                      )}
+                      {/* Bold LKR Price Badge */}
+                      <span className="absolute bottom-2 left-2 z-20 px-2.5 py-1 rounded-lg text-xs font-black font-mono bg-[#072619]/90 text-[#a3e04f] backdrop-blur-xs shadow-sm">
+                        {formatLKR(Number(item.base_price))}
+                      </span>
+
+                      {/* Stock Indicator Dot + Custom badge */}
+                      <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
+                        {hasCustom && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/95 text-[#072619] border border-[#E5ECE8] shadow-xs">
+                            Options
+                          </span>
+                        )}
+                        <span
+                          className="w-2.5 h-2.5 rounded-full bg-[#0f8a5f] ring-2 ring-white shadow-xs"
+                          title="In Stock & Available"
+                        />
+                      </div>
                     </div>
 
-                    {/* Dish Title & Price Row */}
-                    <div className="mb-3">
-                      <h4 className="text-xs font-bold text-[#1A1D1F] line-clamp-2 leading-snug min-h-[32px]">
-                        {item.name}
-                      </h4>
-
-                      <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-sm font-black text-[#119C49] font-mono">
-                          {formatLKR(Number(item.base_price))}
-                        </span>
-
-                        {/* Veg / Non-Veg Indicator */}
+                    {/* Dish Title & Veg/Non-Veg Row */}
+                    <div className="px-0.5 mb-2.5">
+                      <div className="flex items-start justify-between gap-1.5">
+                        <h4
+                          onClick={() => handleQuickAdd(item)}
+                          className="text-xs font-extrabold text-[#072619] line-clamp-2 leading-snug min-h-[32px] cursor-pointer hover:text-[#0f8a5f] transition"
+                        >
+                          {item.name}
+                        </h4>
                         {isVeg ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#119C49] bg-[#D1F0DC] px-2 py-0.5 rounded-full">
-                            <Leaf className="w-3 h-3" />
-                            <span>Veg</span>
+                          <span className="shrink-0 w-4 h-4 rounded-sm border border-[#0f8a5f] flex items-center justify-center bg-[#f4fbf7]" title="Vegetarian">
+                            <Leaf className="w-2.5 h-2.5 text-[#0f8a5f]" />
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                            <Beef className="w-3 h-3" />
-                            <span>Non Veg</span>
+                          <span className="shrink-0 w-4 h-4 rounded-sm border border-rose-500 flex items-center justify-center bg-rose-50" title="Non-Veg">
+                            <Beef className="w-2.5 h-2.5 text-rose-600" />
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Bottom Action Button: 'Add to Dish' or Circular Steppers */}
+                    {/* 1-Tap Add or Inline Stepper */}
                     <div>
                       {isInCart ? (
-                        <div className="flex items-center justify-between bg-[#F8F9FA] p-1 rounded-xl border border-[#EBECEF]">
-                          <button
+                        <div className="flex items-center justify-between bg-[#f4fbf7] p-1 rounded-xl border border-[#0f8a5f]/30">
+                          <motion.button
                             type="button"
+                            whileTap={{ scale: 0.9 }}
                             onClick={() => handleDecrement(item.id)}
-                            className="w-8 h-8 rounded-full bg-[#119C49] text-white flex items-center justify-center font-bold hover:bg-[#0E853E] transition shadow-sm"
+                            className="w-8 h-8 rounded-lg bg-[#0f8a5f] text-white flex items-center justify-center font-bold hover:bg-[#0b6f4c] transition shadow-2xs cursor-pointer"
                           >
                             <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="font-extrabold text-sm text-[#1A1D1F] font-mono">
+                          </motion.button>
+                          <span className="font-extrabold text-sm text-[#072619] font-mono">
                             {cartQty}
                           </span>
-                          <button
+                          <motion.button
                             type="button"
+                            whileTap={{ scale: 0.9 }}
                             onClick={() => handleQuickAdd(item)}
-                            className="w-8 h-8 rounded-full bg-[#119C49] text-white flex items-center justify-center font-bold hover:bg-[#0E853E] transition shadow-sm"
+                            className="w-8 h-8 rounded-lg bg-[#0f8a5f] text-white flex items-center justify-center font-bold hover:bg-[#0b6f4c] transition shadow-2xs cursor-pointer"
                           >
                             <Plus className="w-3.5 h-3.5" />
-                          </button>
+                          </motion.button>
                         </div>
                       ) : (
-                        <Button
+                        <motion.button
                           type="button"
+                          whileTap={{ scale: 0.96 }}
                           onClick={() => handleQuickAdd(item)}
-                          className="w-full h-10 bg-[#D8F3E2] hover:bg-[#C6ECD4] text-[#119C49] font-bold text-xs rounded-xl transition shadow-none border-none"
+                          className="w-full h-9 bg-[#cdeeb0]/55 hover:bg-[#0f8a5f] text-[#072619] hover:text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          Add to Dish
-                        </Button>
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>1-Tap Add</span>
+                        </motion.button>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
-          )}
-        </div>
-
-        {/* Bottom Pinned Live Kitchen Orders Strip */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-[#EBECEF] px-4 flex items-center gap-3 overflow-x-auto scrollbar-none shadow-lg z-20">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C828D] whitespace-nowrap shrink-0">
-            Live Kitchen:
-          </span>
-
-          {liveOrders.length === 0 ? (
-            <span className="text-xs text-[#7C828D]">No pending orders in kitchen prep.</span>
-          ) : (
-            liveOrders.map((ord) => (
-              <div
-                key={ord.id}
-                className="px-3.5 py-1.5 rounded-full bg-white border border-[#EBECEF] shadow-sm flex items-center gap-2.5 shrink-0"
-              >
-                {/* Circular Amber Table Badge */}
-                <div className="w-7 h-7 rounded-full bg-[#F59E0B] text-white font-extrabold text-[11px] flex items-center justify-center shrink-0">
-                  {ord.table_number || 'T1'}
-                </div>
-
-                <div className="text-left leading-tight">
-                  <p className="text-xs font-bold text-[#1A1D1F] truncate max-w-[120px]">
-                    {ord.customer_name || ord.order_number}
-                  </p>
-                  <p className="text-[10px] text-[#7C828D]">
-                    {ord.items_count} items &rarr; Kitchen
-                  </p>
-                </div>
-
-                {/* Status Pill */}
-                <span
-                  className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                    ord.kds_status === 'ready'
-                      ? 'bg-[#D1F0DC] text-[#119C49]'
-                      : 'bg-[#FEF3E2] text-[#F59E0B]'
-                  }`}
-                >
-                  {ord.kds_status === 'ready' ? 'Ready' : 'Process'}
-                </span>
-              </div>
-            ))
+            </motion.div>
           )}
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* RIGHT ORDER CART & PAYMENT PANEL (w-[380px] bg-white)                     */}
+      {/* RIGHT CHECKOUT DOCK (w-[385px] xl:w-[400px] bg-white)                    */}
       {/* ========================================================================= */}
-      <aside className="w-[380px] bg-white border-l border-[#EBECEF] flex flex-col justify-between h-full shrink-0 shadow-lg z-20">
-        {/* Top Header: Table info + Staff Subtitle */}
-        <div className="p-4 border-b border-[#F4F5F7] flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-extrabold text-[#1A1D1F] tracking-tight">
-              {orderType === 'dine_in'
-                ? tableNumber
-                  ? `Table ${tableNumber}`
-                  : 'Select Table'
-                : orderType === 'takeaway'
-                ? 'Take Away'
-                : 'Delivery'}
-            </h3>
-            <p className="text-xs text-[#7C828D]">
-              {currentUser?.display_name || 'Staff Member'}
-            </p>
+      <aside className="w-[385px] xl:w-[400px] bg-white border-l border-[#E5ECE8] flex flex-col justify-between h-full shrink-0 shadow-lg z-20">
+        {/* Top Dock Controls: Order Type + 1-Tap Table & Customer Chips */}
+        <div className="p-3.5 border-b border-[#E5ECE8] space-y-2.5 bg-white">
+          {/* Segmented Order Type Switcher */}
+          <div className="bg-[#f4fbf7] p-1 rounded-xl border border-[#E5ECE8] flex items-center gap-1 relative">
+            {(['dine_in', 'takeaway', 'delivery'] as OrderType[]).map((type) => {
+              const label =
+                type === 'dine_in' ? 'Dine-In' : type === 'takeaway' ? 'Takeaway' : 'Delivery';
+              const isSelected = orderType === type;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setOrderType(type)}
+                  className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition text-center z-10 cursor-pointer ${
+                    isSelected ? 'text-white' : 'text-[#4f675a] hover:text-[#072619]'
+                  }`}
+                >
+                  {isSelected && (
+                    <motion.div
+                      layoutId="active-order-type"
+                      className="absolute inset-0 bg-[#072619] rounded-lg shadow-xs"
+                      transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                    />
+                  )}
+                  <span className="relative z-10">{label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (orderType === 'dine_in') setIsTablePickerOpen(true);
-            }}
-            className="w-9 h-9 rounded-full bg-[#F4F5F7] text-[#7C828D] hover:text-[#1A1D1F] flex items-center justify-center transition"
-            title="Edit Table / Details"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Segmented Switcher: Dine In, Take Away, Delivery */}
-        <div className="px-4 py-2">
-          <div className="bg-[#F4F5F7] p-1 rounded-full flex items-center gap-1">
+          {/* 1-Tap Table & Customer Attachment Chips */}
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => setOrderType('dine_in')}
-              className={`flex-1 py-1.5 rounded-full text-xs font-bold transition text-center ${
-                orderType === 'dine_in'
-                  ? 'bg-[#D1F0DC] text-[#119C49] shadow-sm'
-                  : 'text-[#7C828D] hover:text-[#1A1D1F]'
+              onClick={() => setIsTablePickerOpen(true)}
+              disabled={orderType !== 'dine_in'}
+              className={`h-9 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-between gap-1.5 transition cursor-pointer ${
+                orderType !== 'dine_in'
+                  ? 'bg-zinc-50 border-[#E5ECE8] text-[#4f675a]/50 cursor-not-allowed'
+                  : tableId
+                  ? 'bg-[#cdeeb0]/50 border-[#0f8a5f]/40 text-[#072619]'
+                  : 'bg-[#f4fbf7] border-dashed border-[#0f8a5f]/40 text-[#0f8a5f] hover:bg-[#cdeeb0]/30'
               }`}
             >
-              Dine in
+              <span className="flex items-center gap-1.5 truncate">
+                <Grid3X3 className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">
+                  {orderType !== 'dine_in'
+                    ? 'No Table'
+                    : tableNumber
+                    ? `Table ${tableNumber}`
+                    : 'Pick Table'}
+                </span>
+              </span>
             </button>
-            <button
-              type="button"
-              onClick={() => setOrderType('takeaway')}
-              className={`flex-1 py-1.5 rounded-full text-xs font-bold transition text-center ${
-                orderType === 'takeaway'
-                  ? 'bg-[#D1F0DC] text-[#119C49] shadow-sm'
-                  : 'text-[#7C828D] hover:text-[#1A1D1F]'
-              }`}
-            >
-              Take Away
-            </button>
-            <button
-              type="button"
-              onClick={() => setOrderType('delivery')}
-              className={`flex-1 py-1.5 rounded-full text-xs font-bold transition text-center ${
-                orderType === 'delivery'
-                  ? 'bg-[#D1F0DC] text-[#119C49] shadow-sm'
-                  : 'text-[#7C828D] hover:text-[#1A1D1F]'
-              }`}
-            >
-              Delivery
-            </button>
-          </div>
-        </div>
 
-        {/* Customer / Loyalty Picker Bar */}
-        <div className="px-4 py-1.5 border-b border-[#F4F5F7]">
-          {customerId ? (
-            <div className="p-2.5 rounded-2xl bg-[#D1F0DC]/40 border border-[#119C49]/40 flex items-center justify-between">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <div className="w-7 h-7 rounded-full bg-[#119C49] text-white flex items-center justify-center shrink-0">
-                  <Users className="w-3.5 h-3.5" />
-                </div>
-                <div className="leading-tight truncate">
-                  <span className="font-extrabold text-xs text-[#1A1D1F] block truncate">
-                    {customerName}
-                  </span>
-                  <span className="text-[10px] text-[#119C49] font-bold">
-                    {customerTier} &bull; {customerLoyaltyPoints} Pts
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsCustomerPickerOpen(true)}
-                className="text-[11px] font-bold text-[#119C49] hover:underline shrink-0 ml-2"
-              >
-                Change
-              </button>
-            </div>
-          ) : (
             <button
               type="button"
               onClick={() => setIsCustomerPickerOpen(true)}
-              className="w-full py-2 px-3 rounded-2xl bg-[#F6F7F9] hover:bg-white border border-dashed border-[#EBECEF] hover:border-[#119C49] text-xs font-bold text-[#7C828D] hover:text-[#119C49] flex items-center justify-center gap-1.5 transition"
+              className={`h-9 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-between gap-1.5 transition cursor-pointer ${
+                customerId
+                  ? 'bg-[#cdeeb0]/50 border-[#0f8a5f]/40 text-[#072619]'
+                  : 'bg-[#f4fbf7] border-dashed border-[#E5ECE8] text-[#4f675a] hover:border-[#0f8a5f] hover:text-[#0f8a5f]'
+              }`}
             >
-              <Users className="w-3.5 h-3.5 text-[#119C49]" />
-              <span>+ Attach Customer (Loyalty)</span>
+              <span className="flex items-center gap-1.5 truncate">
+                <Users className="w-3.5 h-3.5 shrink-0 text-[#0f8a5f]" />
+                <span className="truncate">
+                  {customerId ? customerName : '+ Customer'}
+                </span>
+              </span>
+              {customerId && customerTier && (
+                <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-[#072619] text-[#a3e04f] shrink-0">
+                  {customerLoyaltyPoints}p
+                </span>
+              )}
             </button>
-          )}
+          </div>
         </div>
 
-        {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2.5 scrollbar-none">
+        {/* Cart Items List with Inline `-`/`+` Steppers */}
+        <div className="flex-1 overflow-y-auto px-3.5 py-2.5 space-y-2 scrollbar-none">
           {cartItems.length === 0 ? (
-            <div className="h-44 flex flex-col items-center justify-center text-center p-4 text-[#7C828D]">
-              <ShoppingBag className="w-10 h-10 mb-2 opacity-30 text-[#119C49]" />
-              <p className="text-xs font-bold text-[#1A1D1F]">Your Cart is Empty</p>
-              <p className="text-[11px] text-[#7C828D]">Tap &quot;Add to Dish&quot; on any product to ring an order.</p>
+            <div className="h-44 flex flex-col items-center justify-center text-center p-4 text-[#4f675a]">
+              <ShoppingBag className="w-10 h-10 mb-2 opacity-25 text-[#0f8a5f]" />
+              <p className="text-xs font-bold text-[#072619]">Ready for Fast Billing</p>
+              <p className="text-[11px] text-[#4f675a]">Tap any dish photo or press `/` to search menu.</p>
             </div>
           ) : (
-            cartItems.map((cItem) => (
-              <div
-                key={cItem.cart_item_id}
-                className="bg-[#F8F9FA] rounded-2xl p-3 border border-[#EBECEF] flex items-center justify-between gap-3 shadow-none hover:border-[#119C49]/40 transition"
-              >
-                {/* Details */}
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="w-10 h-10 rounded-xl bg-white border border-[#EBECEF] flex items-center justify-center font-bold text-[#119C49] text-xs shrink-0 font-mono">
-                    {cItem.quantity}x
-                  </div>
-                  <div className="overflow-hidden leading-tight">
-                    <p className="text-xs font-bold text-[#1A1D1F] truncate">{cItem.item_name}</p>
-                    <p className="text-[10px] text-[#7C828D] font-mono mt-0.5">
-                      {formatLKR(cItem.unit_price)} &bull; {cItem.quantity}X
-                    </p>
-                  </div>
-                </div>
+            <AnimatePresence initial={false}>
+              {cartItems.map((cItem) => {
+                const matchedItem = items.find((i) => i.id === cItem.menu_item_id);
+                const imageUrl = cItem.image_url || matchedItem?.image_url;
+                const matchedCategory = categories.find((c) => c.id === matchedItem?.category_id)?.name;
 
-                {/* Subtotal & Remove */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-[#119C49] font-mono whitespace-nowrap">
-                    {formatLKR(cItem.unit_price * cItem.quantity)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeItem(cItem.cart_item_id)}
-                    className="w-6 h-6 rounded-full hover:bg-rose-50 text-[#7C828D] hover:text-rose-600 flex items-center justify-center transition"
+                return (
+                  <motion.div
+                    key={cItem.cart_item_id}
+                    initial={{ opacity: 0, height: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                    exit={{ opacity: 0, height: 0, scale: 0.96 }}
+                    transition={{ duration: 0.16 }}
+                    className="bg-[#f4fbf7] rounded-2xl p-2 border border-[#E5ECE8] flex items-center justify-between gap-2 overflow-hidden"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))
+                    {/* Thumbnail + Name */}
+                    <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
+                      <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-[#E5ECE8] bg-white">
+                        <DishImage
+                          src={imageUrl}
+                          alt={cItem.item_name}
+                          category={matchedCategory}
+                          aspectRatio="square"
+                          className="w-full h-full"
+                        />
+                      </div>
+                      <div className="overflow-hidden leading-tight flex-1 min-w-0">
+                        <p className="text-xs font-bold text-[#072619] truncate">{cItem.item_name}</p>
+                        {cItem.variant_name && (
+                          <p className="text-[10px] text-[#0f8a5f] font-semibold truncate">{cItem.variant_name}</p>
+                        )}
+                        <p className="text-[10px] text-[#4f675a] font-mono mt-0.5">
+                          {formatLKR(cItem.unit_price)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Inline `-` / `+` Steppers + Subtotal */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center bg-white rounded-lg border border-[#E5ECE8] p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => updateItemQuantity(cItem.cart_item_id, -1)}
+                          className="w-6 h-6 rounded-md hover:bg-[#f4fbf7] text-[#4f675a] hover:text-[#072619] flex items-center justify-center transition cursor-pointer"
+                          title="Decrease"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-5 text-center text-xs font-black font-mono text-[#072619]">
+                          {cItem.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateItemQuantity(cItem.cart_item_id, 1)}
+                          className="w-6 h-6 rounded-md hover:bg-[#cdeeb0]/50 text-[#0f8a5f] flex items-center justify-center transition cursor-pointer"
+                          title="Increase"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="text-right min-w-[64px]">
+                        <span className="text-xs font-black text-[#072619] font-mono block">
+                          {formatLKR(cItem.unit_price * cItem.quantity)}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeItem(cItem.cart_item_id)}
+                        className="w-6 h-6 rounded-lg hover:bg-rose-50 text-[#4f675a] hover:text-rose-600 flex items-center justify-center transition cursor-pointer"
+                        title="Remove Item"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           )}
         </div>
 
-        {/* Bottom Cart Financials & Payment Submission */}
-        <div className="p-4 border-t border-[#F4F5F7] space-y-3 bg-[#FCFCFD]">
-          {/* Financial Breakdown */}
-          <div className="space-y-1.5 text-xs">
-            <div className="flex items-center justify-between text-[#7C828D]">
+        {/* Bottom Cart Financials & High-Contrast Emerald Settle Dock */}
+        <div className="p-3.5 border-t border-[#E5ECE8] space-y-2.5 bg-[#f4fbf7]/50">
+          {/* Financial Summary */}
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center justify-between text-[#4f675a]">
               <span>Sub Total</span>
-              <span className="font-bold text-[#1A1D1F] font-mono">{formatLKR(subtotal)}</span>
+              <span className="font-bold text-[#072619] font-mono">{formatLKR(subtotal)}</span>
             </div>
 
-            {/* Promotion Discount */}
             {discountAmount > 0 && (
-              <div className="flex items-center justify-between text-[#119C49]">
+              <div className="flex items-center justify-between text-[#0f8a5f]">
                 <span className="flex items-center gap-1 font-semibold truncate max-w-[200px]">
-                  <Tag className="w-3.5 h-3.5 shrink-0" /> {discountReason || 'Promo Discount'}
+                  <Tag className="w-3 h-3 shrink-0" /> {discountReason || 'Promo Discount'}
                 </span>
                 <span className="font-bold font-mono shrink-0">-{formatLKR(discountAmount)}</span>
               </div>
             )}
 
-            {/* Loyalty Points Redemption Toggle */}
             {customerId && customerLoyaltyPoints > 0 && (
-              <div className="p-2 rounded-xl bg-[#FEF3E2] border border-[#F59E0B]/30 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-[#1A1D1F]">
+              <div className="p-1.5 rounded-xl bg-[#FEF3E2] border border-[#F59E0B]/30 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] text-[#072619]">
                   <Award className="w-3.5 h-3.5 text-[#F59E0B]" />
                   <span className="font-bold">Redeem Points</span>
                 </div>
@@ -931,27 +1042,26 @@ export default function PosBillingPage() {
                       setRedeemLoyaltyPoints(Math.min(customerLoyaltyPoints, Math.floor(subtotal)));
                     }
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition font-mono ${
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition font-mono cursor-pointer ${
                     loyaltyPointsToRedeem > 0
-                      ? 'bg-[#119C49] text-white shadow-sm'
-                      : 'bg-white text-[#F59E0B] border border-[#F59E0B]/40'
+                      ? 'bg-[#0f8a5f] text-white'
+                      : 'bg-white text-[#B45309] border border-[#F59E0B]/40'
                   }`}
                 >
                   {loyaltyPointsToRedeem > 0
-                    ? `-${formatLKR(loyaltyPointsToRedeem)} (Active)`
-                    : `Apply (${customerLoyaltyPoints} Pts)`}
+                    ? `-${formatLKR(loyaltyPointsToRedeem)}`
+                    : `Use ${customerLoyaltyPoints} Pts`}
                 </button>
               </div>
             )}
 
             {orderType === 'dine_in' && (
-              <div className="flex items-center justify-between text-[#7C828D]">
+              <div className="flex items-center justify-between text-[#4f675a]">
                 <span>Service Charge (10%)</span>
-                <span className="font-bold text-[#1A1D1F] font-mono">{formatLKR(serviceCharge)}</span>
+                <span className="font-bold text-[#072619] font-mono">{formatLKR(serviceCharge)}</span>
               </div>
             )}
 
-            {/* Manual Discount Trigger */}
             <div className="flex items-center justify-between pt-0.5">
               <button
                 type="button"
@@ -961,79 +1071,86 @@ export default function PosBillingPage() {
                   setManagerPinInput('');
                   setIsManualDiscountOpen(true);
                 }}
-                className="text-[11px] font-bold text-[#7C828D] hover:text-[#119C49] flex items-center gap-1"
+                className="text-[11px] font-bold text-[#4f675a] hover:text-[#0f8a5f] flex items-center gap-1 cursor-pointer"
               >
                 <Percent className="w-3 h-3" />
                 <span>
-                  {discountAmount > 0 && !activePromoId
-                    ? 'Edit Manual Discount'
-                    : '+ Add Manual Discount'}
+                  {discountAmount > 0 && !activePromoId ? 'Edit Discount' : '+ Add Discount'}
                 </span>
               </button>
+
+              {cartItems.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => clearCart()}
+                  className="text-[11px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer"
+                >
+                  Clear Cart
+                </button>
+              )}
             </div>
 
-            <div className="pt-2 border-t border-[#EBECEF] flex items-center justify-between text-sm font-extrabold text-[#1A1D1F]">
-              <span>Total Amount</span>
-              <span className="text-base text-[#119C49] font-mono">{formatLKR(total)}</span>
+            <div className="pt-2 border-t border-[#E5ECE8] flex items-center justify-between">
+              <span className="font-display text-sm font-extrabold text-[#072619]">Grand Total</span>
+              <span className="font-display text-xl font-black text-[#0f8a5f] font-mono">
+                {formatLKR(total)}
+              </span>
             </div>
           </div>
 
-          {/* 3 Payment Method Tiles: Cash, Credit Card, QR Code */}
-          <div className="grid grid-cols-3 gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setSelectedPaymentMethod('cash')}
-              className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition text-xs font-bold ${
-                selectedPaymentMethod === 'cash'
-                  ? 'bg-[#D1F0DC] border-[#119C49] text-[#119C49] shadow-sm'
-                  : 'bg-white border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F]'
-              }`}
-            >
-              <Wallet className="w-4 h-4" />
-              <span>Cash</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedPaymentMethod('credit_card')}
-              className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition text-xs font-bold ${
-                selectedPaymentMethod === 'credit_card'
-                  ? 'bg-[#D1F0DC] border-[#119C49] text-[#119C49] shadow-sm'
-                  : 'bg-white border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F]'
-              }`}
-            >
-              <CreditCard className="w-4 h-4" />
-              <span className="text-[10px]">Card</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedPaymentMethod('qr_payment')}
-              className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition text-xs font-bold ${
-                selectedPaymentMethod === 'qr_payment'
-                  ? 'bg-[#D1F0DC] border-[#119C49] text-[#119C49] shadow-sm'
-                  : 'bg-white border-[#EBECEF] text-[#7C828D] hover:text-[#1A1D1F]'
-              }`}
-            >
-              <QrCode className="w-4 h-4" />
-              <span className="text-[10px]">QR Code</span>
-            </button>
+          {/* 4 Instant Tender Buttons: Cash, Card, LankaQR, WhatsApp E-Bill */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {(
+              [
+                { id: 'cash', label: 'Cash', icon: Wallet },
+                { id: 'credit_card', label: 'Card', icon: CreditCard },
+                { id: 'qr_payment', label: 'LankaQR', icon: QrCode },
+                { id: 'whatsapp_ebill', label: 'WA E-Bill', icon: MessageCircle },
+              ] as const
+            ).map((tender) => {
+              const Icon = tender.icon;
+              const isSelected = selectedPaymentMethod === tender.id;
+              return (
+                <button
+                  key={tender.id}
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod(tender.id)}
+                  className={`py-2 px-1 rounded-xl border flex flex-col items-center justify-center gap-1 transition text-[10px] font-bold cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#072619] border-[#072619] text-[#a3e04f] shadow-sm'
+                      : 'bg-white border-[#E5ECE8] text-[#4f675a] hover:text-[#072619] hover:border-[#0f8a5f]/40'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="truncate">{tender.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Place Order Primary Action Button */}
-          <Button
-            type="button"
-            disabled={cartItems.length === 0 || isSubmitting}
-            onClick={handlePlaceOrder}
-            className="w-full h-14 bg-[#119C49] hover:bg-[#0E853E] text-white font-extrabold text-base rounded-2xl shadow-lg shadow-[#119C49]/25 transition"
-          >
-            {isSubmitting ? 'Placing Order...' : 'Place Order'}
-          </Button>
+          {/* High-Contrast Emerald Settle & Print Bill CTA */}
+          <motion.div whileTap={{ scale: 0.98 }}>
+            <Button
+              type="button"
+              disabled={cartItems.length === 0 || isSubmitting}
+              onClick={() => handlePlaceOrder()}
+              className="w-full h-13 bg-[#0f8a5f] hover:bg-[#0b6f4c] text-white font-display font-extrabold text-sm rounded-2xl shadow-lg shadow-[#0f8a5f]/25 flex items-center justify-between px-5 transition cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <Printer className="w-4 h-4 text-[#a3e04f]" />
+                <span>{isSubmitting ? 'Settling...' : 'Settle & Print Bill'}</span>
+              </span>
+              <span className="font-mono font-black text-base text-[#a3e04f]">
+                {formatLKR(total)}
+              </span>
+            </Button>
+          </motion.div>
         </div>
       </aside>
 
       {/* ========================================================================= */}
       {/* GLOBAL MODALS */}
+      {/* ========================================================================= */}
       <ItemCustomizerModal
         isOpen={isCustomizerOpen}
         onOpenChange={setIsCustomizerOpen}
@@ -1070,6 +1187,7 @@ export default function PosBillingPage() {
         subtotal={successDetails.subtotal}
         serviceCharge={successDetails.serviceCharge}
         tableNumber={successDetails.tableNumber}
+        customerPhone={successDetails.customerPhone}
         items={successDetails.items}
         onNewOrder={() => {
           setIsPaymentSuccessOpen(false);
@@ -1084,7 +1202,6 @@ export default function PosBillingPage() {
         onSelectCustomer={(cust) => {
           setCustomerDetails(cust);
           if (cust && cust.loyalty_points > 0) {
-            // By default don't auto-redeem, cashier can toggle
             setRedeemLoyaltyPoints(0);
           }
         }}
@@ -1092,13 +1209,13 @@ export default function PosBillingPage() {
 
       {/* Manual Discount with Manager PIN check */}
       <Dialog open={isManualDiscountOpen} onOpenChange={setIsManualDiscountOpen}>
-        <DialogContent className="max-w-sm rounded-3xl bg-white border-[#EBECEF] p-6 shadow-2xl">
+        <DialogContent className="max-w-sm rounded-3xl bg-white border-[#E5ECE8] p-6 shadow-2xl">
           <DialogHeader className="pr-10">
-            <DialogTitle className="text-xl font-extrabold text-[#1A1D1F] flex items-center gap-2">
-              <Percent className="w-5 h-5 text-[#119C49]" />
+            <DialogTitle className="font-display text-xl font-extrabold text-[#072619] flex items-center gap-2">
+              <Percent className="w-5 h-5 text-[#0f8a5f]" />
               <span>Manual Order Discount</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-[#7C828D]">
+            <DialogDescription className="text-xs text-[#4f675a]">
               Apply a fixed-amount promotional or courtesy discount to the cart total.
             </DialogDescription>
           </DialogHeader>
@@ -1112,7 +1229,7 @@ export default function PosBillingPage() {
 
           <div className="space-y-3 py-2 text-xs">
             <div>
-              <label className="font-bold text-[#1A1D1F] block mb-1">
+              <label className="font-bold text-[#072619] block mb-1">
                 Discount Amount (LKR)
               </label>
               <Input
@@ -1126,13 +1243,13 @@ export default function PosBillingPage() {
                 }}
                 className="h-10 rounded-2xl font-mono text-sm font-bold"
               />
-              <span className="text-[10px] text-[#7C828D] block mt-1">
+              <span className="text-[10px] text-[#4f675a] block mt-1">
                 Subtotal: {formatLKR(getSubtotal())} &bull; Max 10% without Manager PIN: {formatLKR(getSubtotal() * 0.1)}
               </span>
             </div>
 
             <div>
-              <label className="font-bold text-[#1A1D1F] block mb-1">Reason / Note</label>
+              <label className="font-bold text-[#072619] block mb-1">Reason / Note</label>
               <Input
                 type="text"
                 placeholder="Cashier courtesy, owner guest, VIP discount"
@@ -1142,8 +1259,7 @@ export default function PosBillingPage() {
               />
             </div>
 
-            {/* If discount > 10%, prompt for Manager PIN */}
-            {getSubtotal() > 0 && (manualDiscountInput / getSubtotal()) > 0.10 && (
+            {getSubtotal() > 0 && manualDiscountInput / getSubtotal() > 0.10 && (
               <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 space-y-2">
                 <label className="font-bold text-red-700 block flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5" />
@@ -1169,14 +1285,14 @@ export default function PosBillingPage() {
               type="button"
               variant="outline"
               onClick={() => setIsManualDiscountOpen(false)}
-              className="rounded-2xl"
+              className="rounded-2xl border-[#E5ECE8]"
             >
               Cancel
             </Button>
             <Button
               type="button"
               onClick={handleApplyManualDiscount}
-              className="rounded-2xl bg-[#119C49] hover:bg-[#0E853E] text-white font-bold"
+              className="rounded-2xl bg-[#0f8a5f] hover:bg-[#0b6f4c] text-white font-bold"
             >
               Apply Discount
             </Button>

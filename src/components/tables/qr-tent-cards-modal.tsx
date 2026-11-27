@@ -114,20 +114,20 @@ export function QrTentCardsModal({ isOpen, onClose, tables, selectedTable }: QrT
                 className="relative bg-white border-2 border-dashed border-[#D1F0DC] rounded-3xl p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-black print:page-break-inside-avoid"
               >
                 {/* Brand Badge */}
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#D1F0DC] text-[#119C49] text-xs font-bold uppercase tracking-wider mb-3">
+                <div className="flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#072619] text-[#a3e04f] text-xs font-bold uppercase tracking-wider mb-3">
                   <Utensils className="w-3.5 h-3.5" />
-                  <span>PCS Restaurant</span>
+                  <span>PCS Bill</span>
                 </div>
 
-                <h3 className="text-3xl font-black text-[#1A1D1F] tracking-tight">
+                <h3 className="font-display text-3xl font-black text-[#072619] tracking-tight">
                   TABLE {table.table_number}
                 </h3>
-                <p className="text-xs text-[#7C828D] mt-0.5">
+                <p className="text-xs text-[#4f675a] mt-0.5">
                   Section: {table.section || 'Main Dining Hall'} • Capacity: {table.capacity || table.seating_capacity || 4} Guests
                 </p>
 
                 {/* QR Container */}
-                <div className="my-5 p-4 bg-[#F6F7F9] rounded-2xl border border-[#EBECEF] flex flex-col items-center justify-center">
+                <div className="my-5 p-4 bg-[#f4fbf7] rounded-2xl border border-[#E5ECE8] flex flex-col items-center justify-center">
                   {qrUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -136,27 +136,27 @@ export function QrTentCardsModal({ isOpen, onClose, tables, selectedTable }: QrT
                       className="w-48 h-48 rounded-xl shadow-inner bg-white p-2"
                     />
                   ) : (
-                    <div className="w-48 h-48 flex items-center justify-center text-sm text-[#7C828D]">
+                    <div className="w-48 h-48 flex items-center justify-center text-sm text-[#4f675a]">
                       Generating QR...
                     </div>
                   )}
                 </div>
 
                 {/* Instructions */}
-                <div className="bg-[#F8FAF9] w-full rounded-2xl p-3 border border-[#EBECEF]/60">
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#119C49] mb-1">
+                <div className="bg-[#f4fbf7] w-full rounded-2xl p-3 border border-[#E5ECE8]">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#0f8a5f] mb-1">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Scan with Your Phone Camera</span>
                   </div>
-                  <ol className="text-[11px] text-[#7C828D] space-y-0.5">
+                  <ol className="text-[11px] text-[#4f675a] space-y-0.5">
                     <li>1. Point camera at the QR code</li>
                     <li>2. Browse our digital menu & customize</li>
                     <li>3. Order instantly to this table</li>
                   </ol>
                 </div>
 
-                <div className="mt-4 text-[10px] text-[#A0A4AB] font-mono">
-                  {origin}/order/table/{table.id.substring(0, 8)}...
+                <div className="mt-4 text-[10px] text-[#4f675a] font-mono">
+                  pcsbill.com &bull; Powered by Pixel Craft Studios &bull; +94 78 76 76 576
                 </div>
               </div>
             );
