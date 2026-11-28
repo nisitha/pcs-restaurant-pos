@@ -139,6 +139,12 @@ export default function PosBillingPage() {
     items: [] as Array<{ name: string; quantity: number; price: number }>,
   });
 
+  // Hydration Guard for persisted Zustand stores (cart, branch, shift, menu)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Filter & Search
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -248,8 +254,26 @@ export default function PosBillingPage() {
     return Utensils;
   };
 
+  const displayCartItems = mounted ? cartItems : [];
+  const displayItems = mounted ? items : [];
+  const displayCategories = mounted ? categories : [];
+  const displayHeldOrders = mounted ? heldOrders : [];
+  const displayOrderType = mounted ? orderType : 'dine_in';
+  const displayTableId = mounted ? tableId : null;
+  const displayTableNumber = mounted ? tableNumber : null;
+  const displayCustomerId = mounted ? customerId : null;
+  const displayCustomerName = mounted ? customerName : '';
+  const displayCustomerTier = mounted ? customerTier : null;
+  const displayCustomerLoyaltyPoints = mounted ? customerLoyaltyPoints : 0;
+  const displayLoyaltyPointsToRedeem = mounted ? loyaltyPointsToRedeem : 0;
+  const displayDiscountAmount = mounted ? discountAmount : 0;
+  const displayDiscountReason = mounted ? discountReason : '';
+  const displayActivePromoId = mounted ? activePromoId : null;
+  const displayActiveShift = mounted ? activeShift : null;
+  const displayHasActiveShift = mounted ? hasActiveShift : false;
+
   // Filter items
-  const filteredItems = items.filter((item) => {
+  const filteredItems = displayItems.filter((item) => {
     if (!item.is_available) return false;
     if (selectedCategory !== 'all' && item.category_id !== selectedCategory) return false;
     if (searchQuery.trim() && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -258,7 +282,7 @@ export default function PosBillingPage() {
 
   // Calculate cart quantities per menu item
   const getItemCartQuantity = (menuItemId: string) => {
-    return cartItems
+    return displayCartItems
       .filter((i) => i.menu_item_id === menuItemId)
       .reduce((sum, i) => sum + i.quantity, 0);
   };
@@ -504,13 +528,14 @@ export default function PosBillingPage() {
     }
   };
 
-  const subtotal = getSubtotal();
-  const serviceCharge = getServiceCharge();
-  const total = getTotal();
-  const activeBranchName = activeBranch?.name || 'Colombo Main';
+  const subtotal = mounted ? getSubtotal() : 0;
+  const serviceCharge = mounted ? getServiceCharge() : 0;
+  const total = mounted ? getTotal() : 0;
+  const activeBranchName = mounted ? (activeBranch?.name || 'Colombo Main') : 'Colombo Main';
 
   // Broadcast live POS state to Customer Facing Display (/cfd)
   useEffect(() => {
+    if (!mounted) return;
     broadcastCfdState({
       branchName: activeBranchName,
       orderType,
@@ -533,6 +558,7 @@ export default function PosBillingPage() {
       updatedAt: Date.now(),
     });
   }, [
+    mounted,
     activeBranchName,
     orderType,
     tableNumber,
@@ -565,18 +591,18 @@ export default function PosBillingPage() {
 
               <div
                 className={`h-9 px-3 rounded-xl border flex items-center gap-2 text-xs font-bold ${
-                  hasActiveShift && activeShift
+                  displayHasActiveShift && displayActiveShift
                     ? 'bg-[#cdeeb0]/40 border-[#0f8a5f]/25 text-[#072619]'
                     : 'bg-amber-50 border-amber-200 text-amber-800'
                 }`}
               >
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    hasActiveShift && activeShift ? 'bg-[#0f8a5f] animate-pulse' : 'bg-amber-500'
+                    displayHasActiveShift && displayActiveShift ? 'bg-[#0f8a5f] animate-pulse' : 'bg-amber-500'
                   }`}
                 />
-                {hasActiveShift && activeShift ? (
-                  <span className="font-mono">{formatLKR(activeShift.expected_cash)}</span>
+                {displayHasActiveShift && displayActiveShift ? (
+                  <span className="font-mono">{formatLKR(displayActiveShift.expected_cash)}</span>
                 ) : (
                   <span>No Shift</span>
                 )}
@@ -588,6 +614,8 @@ export default function PosBillingPage() {
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4f675a]" />
               <input
                 ref={searchInputRef}
+                id="pos-search-input"
+                name="pos-search"
                 type="text"
                 placeholder="Search menu items..."
                 value={searchQuery}
@@ -601,7 +629,7 @@ export default function PosBillingPage() {
 
             {/* Right: Park Cart + Hold Orders Badge */}
             <div className="flex items-center gap-2">
-              {cartItems.length > 0 && (
+              {displayCartItems.length > 0 && (
                 <button
                   type="button"
                   onClick={() => holdCurrentOrder()}
@@ -623,10 +651,10 @@ export default function PosBillingPage() {
                 <span className="hidden sm:inline">Held</span>
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-black ${
-                    heldOrders.length > 0 ? 'bg-[#FEF3E2] text-[#B45309]' : 'bg-[#f4fbf7] text-[#4f675a]'
+                    displayHeldOrders.length > 0 ? 'bg-[#FEF3E2] text-[#B45309]' : 'bg-[#f4fbf7] text-[#4f675a]'
                   }`}
                 >
-                  {heldOrders.length}
+                  {displayHeldOrders.length}
                 </span>
               </button>
             </div>
@@ -698,14 +726,14 @@ export default function PosBillingPage() {
             <div className="relative z-10 text-left leading-tight">
               <span className="block font-extrabold">All Menu</span>
               <span className={`text-[10px] font-mono ${selectedCategory === 'all' ? 'text-[#a3e04f]' : 'text-[#4f675a]'}`}>
-                {items.filter((i) => i.is_available).length} items
+                {displayItems.filter((i) => i.is_available).length} items
               </span>
             </div>
           </button>
 
-          {categories.map((cat) => {
+          {displayCategories.map((cat) => {
             const isSelected = selectedCategory === cat.id;
-            const categoryItemCount = items.filter((i) => i.category_id === cat.id && i.is_available).length;
+            const categoryItemCount = displayItems.filter((i) => i.category_id === cat.id && i.is_available).length;
             const img3d = getCategory3DImage(cat.name);
 
             return (
@@ -900,7 +928,7 @@ export default function PosBillingPage() {
             {(['dine_in', 'takeaway', 'delivery'] as OrderType[]).map((type) => {
               const label =
                 type === 'dine_in' ? 'Dine-In' : type === 'takeaway' ? 'Takeaway' : 'Delivery';
-              const isSelected = orderType === type;
+              const isSelected = displayOrderType === type;
               return (
                 <button
                   key={type}
@@ -928,11 +956,11 @@ export default function PosBillingPage() {
             <button
               type="button"
               onClick={() => setIsTablePickerOpen(true)}
-              disabled={orderType !== 'dine_in'}
+              disabled={displayOrderType !== 'dine_in'}
               className={`h-9 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-between gap-1.5 transition cursor-pointer ${
-                orderType !== 'dine_in'
+                displayOrderType !== 'dine_in'
                   ? 'bg-zinc-50 border-[#E5ECE8] text-[#4f675a]/50 cursor-not-allowed'
-                  : tableId
+                  : displayTableId
                   ? 'bg-[#cdeeb0]/50 border-[#0f8a5f]/40 text-[#072619]'
                   : 'bg-[#f4fbf7] border-dashed border-[#0f8a5f]/40 text-[#0f8a5f] hover:bg-[#cdeeb0]/30'
               }`}
@@ -940,10 +968,10 @@ export default function PosBillingPage() {
               <span className="flex items-center gap-1.5 truncate">
                 <Grid3X3 className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">
-                  {orderType !== 'dine_in'
+                  {displayOrderType !== 'dine_in'
                     ? 'No Table'
-                    : tableNumber
-                    ? `Table ${tableNumber}`
+                    : displayTableNumber
+                    ? `Table ${displayTableNumber}`
                     : 'Pick Table'}
                 </span>
               </span>
@@ -953,7 +981,7 @@ export default function PosBillingPage() {
               type="button"
               onClick={() => setIsCustomerPickerOpen(true)}
               className={`h-9 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-between gap-1.5 transition cursor-pointer ${
-                customerId
+                displayCustomerId
                   ? 'bg-[#cdeeb0]/50 border-[#0f8a5f]/40 text-[#072619]'
                   : 'bg-[#f4fbf7] border-dashed border-[#E5ECE8] text-[#4f675a] hover:border-[#0f8a5f] hover:text-[#0f8a5f]'
               }`}
@@ -961,12 +989,12 @@ export default function PosBillingPage() {
               <span className="flex items-center gap-1.5 truncate">
                 <Users className="w-3.5 h-3.5 shrink-0 text-[#0f8a5f]" />
                 <span className="truncate">
-                  {customerId ? customerName : '+ Customer'}
+                  {displayCustomerId ? displayCustomerName : '+ Customer'}
                 </span>
               </span>
-              {customerId && customerTier && (
+              {displayCustomerId && displayCustomerTier && (
                 <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-[#072619] text-[#a3e04f] shrink-0">
-                  {customerLoyaltyPoints}p
+                  {displayCustomerLoyaltyPoints}p
                 </span>
               )}
             </button>
@@ -975,7 +1003,7 @@ export default function PosBillingPage() {
 
         {/* Cart Items List with Inline `-`/`+` Steppers */}
         <div className="flex-1 overflow-y-auto px-3.5 py-2.5 space-y-2 scrollbar-none">
-          {cartItems.length === 0 ? (
+          {displayCartItems.length === 0 ? (
             <div className="h-44 flex flex-col items-center justify-center text-center p-4 text-[#4f675a]">
               <ShoppingBag className="w-10 h-10 mb-2 opacity-25 text-[#0f8a5f]" />
               <p className="text-xs font-bold text-[#072619]">Ready for Fast Billing</p>
@@ -983,10 +1011,10 @@ export default function PosBillingPage() {
             </div>
           ) : (
             <AnimatePresence initial={false}>
-              {cartItems.map((cItem) => {
-                const matchedItem = items.find((i) => i.id === cItem.menu_item_id);
+              {displayCartItems.map((cItem) => {
+                const matchedItem = displayItems.find((i) => i.id === cItem.menu_item_id);
                 const imageUrl = cItem.image_url || matchedItem?.image_url;
-                const matchedCategory = categories.find((c) => c.id === matchedItem?.category_id)?.name;
+                const matchedCategory = displayCategories.find((c) => c.id === matchedItem?.category_id)?.name;
 
                 return (
                   <motion.div
@@ -999,7 +1027,7 @@ export default function PosBillingPage() {
                   >
                     {/* Thumbnail + Name */}
                     <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
-                      <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-[#E5ECE8] bg-white">
+                      <div className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-[#E5ECE8] bg-white">
                         <DishImage
                           src={imageUrl}
                           alt={cItem.item_name}
@@ -1080,16 +1108,16 @@ export default function PosBillingPage() {
               <span className="font-bold text-[#072619] font-mono">{formatLKR(subtotal)}</span>
             </div>
 
-            {discountAmount > 0 && (
+            {displayDiscountAmount > 0 && (
               <div className="flex items-center justify-between text-[#0f8a5f]">
                 <span className="flex items-center gap-1 font-semibold truncate max-w-[200px]">
-                  <Tag className="w-3 h-3 shrink-0" /> {discountReason || 'Promo Discount'}
+                  <Tag className="w-3 h-3 shrink-0" /> {displayDiscountReason || 'Promo Discount'}
                 </span>
-                <span className="font-bold font-mono shrink-0">-{formatLKR(discountAmount)}</span>
+                <span className="font-bold font-mono shrink-0">-{formatLKR(displayDiscountAmount)}</span>
               </div>
             )}
 
-            {customerId && customerLoyaltyPoints > 0 && (
+            {displayCustomerId && displayCustomerLoyaltyPoints > 0 && (
               <div className="p-1.5 rounded-xl bg-[#FEF3E2] border border-[#F59E0B]/30 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-[11px] text-[#072619]">
                   <Award className="w-3.5 h-3.5 text-[#F59E0B]" />
@@ -1098,26 +1126,26 @@ export default function PosBillingPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (loyaltyPointsToRedeem > 0) {
+                    if (displayLoyaltyPointsToRedeem > 0) {
                       setRedeemLoyaltyPoints(0);
                     } else {
-                      setRedeemLoyaltyPoints(Math.min(customerLoyaltyPoints, Math.floor(subtotal)));
+                      setRedeemLoyaltyPoints(Math.min(displayCustomerLoyaltyPoints, Math.floor(subtotal)));
                     }
                   }}
                   className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition font-mono cursor-pointer ${
-                    loyaltyPointsToRedeem > 0
+                    displayLoyaltyPointsToRedeem > 0
                       ? 'bg-[#0f8a5f] text-white'
                       : 'bg-white text-[#B45309] border border-[#F59E0B]/40'
                   }`}
                 >
-                  {loyaltyPointsToRedeem > 0
-                    ? `-${formatLKR(loyaltyPointsToRedeem)}`
-                    : `Use ${customerLoyaltyPoints} Pts`}
+                  {displayLoyaltyPointsToRedeem > 0
+                    ? `-${formatLKR(displayLoyaltyPointsToRedeem)}`
+                    : `Use ${displayCustomerLoyaltyPoints} Pts`}
                 </button>
               </div>
             )}
 
-            {orderType === 'dine_in' && (
+            {displayOrderType === 'dine_in' && (
               <div className="flex items-center justify-between text-[#4f675a]">
                 <span>Service Charge (10%)</span>
                 <span className="font-bold text-[#072619] font-mono">{formatLKR(serviceCharge)}</span>
@@ -1128,7 +1156,7 @@ export default function PosBillingPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setManualDiscountInput(discountAmount > 0 && !activePromoId ? discountAmount : 0);
+                  setManualDiscountInput(displayDiscountAmount > 0 && !displayActivePromoId ? displayDiscountAmount : 0);
                   setManagerPinError(null);
                   setManagerPinInput('');
                   setIsManualDiscountOpen(true);
@@ -1137,11 +1165,11 @@ export default function PosBillingPage() {
               >
                 <Percent className="w-3 h-3" />
                 <span>
-                  {discountAmount > 0 && !activePromoId ? 'Edit Discount' : '+ Add Discount'}
+                  {displayDiscountAmount > 0 && !displayActivePromoId ? 'Edit Discount' : '+ Add Discount'}
                 </span>
               </button>
 
-              {cartItems.length > 0 && (
+              {displayCartItems.length > 0 && (
                 <button
                   type="button"
                   onClick={() => clearCart()}
@@ -1194,7 +1222,7 @@ export default function PosBillingPage() {
           <motion.div whileTap={{ scale: 0.98 }}>
             <Button
               type="button"
-              disabled={cartItems.length === 0 || isSubmitting}
+              disabled={displayCartItems.length === 0 || isSubmitting}
               onClick={() => handlePlaceOrder()}
               className="w-full h-13 bg-[#0f8a5f] hover:bg-[#0b6f4c] text-white font-display font-extrabold text-sm rounded-2xl shadow-lg shadow-[#0f8a5f]/25 flex items-center justify-between px-5 transition cursor-pointer"
             >
@@ -1226,7 +1254,7 @@ export default function PosBillingPage() {
       <TablePickerModal
         isOpen={isTablePickerOpen}
         onOpenChange={setIsTablePickerOpen}
-        selectedTableId={tableId}
+        selectedTableId={displayTableId}
         onSelectTable={(selectedId, selectedNumber) => {
           setTable(selectedId, selectedNumber);
           setIsTablePickerOpen(false);
@@ -1260,7 +1288,7 @@ export default function PosBillingPage() {
       <CustomerPickerModal
         isOpen={isCustomerPickerOpen}
         onClose={() => setIsCustomerPickerOpen(false)}
-        selectedCustomerId={customerId}
+        selectedCustomerId={displayCustomerId}
         onSelectCustomer={(cust) => {
           setCustomerDetails(cust);
           if (cust && cust.loyalty_points > 0) {
@@ -1291,10 +1319,12 @@ export default function PosBillingPage() {
 
           <div className="space-y-3 py-2 text-xs">
             <div>
-              <label className="font-bold text-[#072619] block mb-1">
+              <label htmlFor="manual-discount-amount" className="font-bold text-[#072619] block mb-1">
                 Discount Amount (LKR)
               </label>
               <Input
+                id="manual-discount-amount"
+                name="manual-discount-amount"
                 type="number"
                 step="10"
                 min="0"
@@ -1311,8 +1341,10 @@ export default function PosBillingPage() {
             </div>
 
             <div>
-              <label className="font-bold text-[#072619] block mb-1">Reason / Note</label>
+              <label htmlFor="manual-discount-reason" className="font-bold text-[#072619] block mb-1">Reason / Note</label>
               <Input
+                id="manual-discount-reason"
+                name="manual-discount-reason"
                 type="text"
                 placeholder="Cashier courtesy, owner guest, VIP discount"
                 value={manualDiscountReason}
@@ -1323,11 +1355,13 @@ export default function PosBillingPage() {
 
             {getSubtotal() > 0 && manualDiscountInput / getSubtotal() > 0.10 && (
               <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 space-y-2">
-                <label className="font-bold text-red-700 block flex items-center gap-1.5">
+                <label htmlFor="manual-discount-pin" className="font-bold text-red-700 block flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5" />
                   <span>Manager Authorization Required (&gt; 10%)</span>
                 </label>
                 <Input
+                  id="manual-discount-pin"
+                  name="manual-discount-pin"
                   type="password"
                   maxLength={4}
                   placeholder="••••"

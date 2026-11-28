@@ -125,6 +125,17 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
   const { branches, activeBranchId, setActiveBranchId } = useBranchStore();
   const { isOnline, pendingCount, isSyncing, syncNow } = useOfflineSync();
 
+  const [mounted, setMounted] = useState<boolean>(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const safeCurrentUser = mounted ? currentUser : null;
+  const safeActiveShift = mounted ? activeShift : null;
+  const safeHasActiveShift = mounted ? hasActiveShift : false;
+  const safeBranches = mounted ? branches : branches.slice(0, 1);
+  const safeActiveBranchId = mounted ? activeBranchId : '00000000-0000-0000-0000-000000000001';
+
   const [focusPosMode, setFocusPosMode] = useState<boolean>(false);
   const [hasManualOverride, setHasManualOverride] = useState<boolean>(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
@@ -219,12 +230,14 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
                   PCS Bill <span className="text-[#0f8a5f]">OS</span>
                 </span>
                 <select
-                  value={activeBranchId}
+                  id="sidebar-branch-select"
+                  name="sidebar-branch"
+                  value={safeActiveBranchId}
                   onChange={(e) => setActiveBranchId(e.target.value)}
                   className="text-[10px] text-[#0f8a5f] font-bold tracking-wide bg-transparent border-0 p-0 focus:outline-none cursor-pointer truncate max-w-36"
                   title="Switch Active Branch"
                 >
-                  {branches.map((b) => (
+                  {safeBranches.map((b) => (
                     <option key={b.id} value={b.id} className="text-[#072619] bg-white font-sans text-xs">
                       {b.name}
                     </option>
@@ -261,7 +274,7 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
         <nav className={`flex-1 overflow-y-auto scrollbar-none ${isCollapsed ? 'p-2 space-y-1.5' : 'p-2.5 space-y-2.5'}`}>
           {NAV_GROUPS.map((group) => {
             const visibleItems = group.items.filter(
-              (link) => !currentUser || link.roles.includes(currentUser.role)
+              (link) => !safeCurrentUser || link.roles.includes(safeCurrentUser.role)
             );
             if (visibleItems.length === 0) return null;
 
@@ -403,23 +416,23 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
           </div>
 
           {/* Active Shift Status Pill */}
-          {currentUser && (currentUser.role === 'cashier' || currentUser.role === 'manager' || currentUser.role === 'owner') && (
+          {safeCurrentUser && (safeCurrentUser.role === 'cashier' || safeCurrentUser.role === 'manager' || safeCurrentUser.role === 'owner') && (
             <div>
-              {hasActiveShift && activeShift ? (
+              {safeHasActiveShift && safeActiveShift ? (
                 <button
                   type="button"
                   onClick={() => setIsDrawerActionOpen(true)}
                   className={`w-full flex items-center gap-2 rounded-xl bg-white border border-[#0f8a5f]/25 hover:border-[#0f8a5f] transition text-left shadow-2xs ${
                     isCollapsed ? 'justify-center p-2' : 'p-2'
                   }`}
-                  title={`Shift Open: ${formatLKR(activeShift.expected_cash)}`}
+                  title={`Shift Open: ${formatLKR(safeActiveShift.expected_cash)}`}
                 >
                   <span className="w-2.5 h-2.5 rounded-full bg-[#0f8a5f] animate-pulse shrink-0" />
                   {!isCollapsed && (
                     <div className="overflow-hidden leading-tight">
                       <p className="text-[10px] text-[#0f8a5f] font-bold uppercase tracking-wider">Shift Open</p>
                       <p className="text-xs font-extrabold text-[#072619] truncate font-mono">
-                        {formatLKR(activeShift.expected_cash)}
+                        {formatLKR(safeActiveShift.expected_cash)}
                       </p>
                     </div>
                   )}
@@ -443,21 +456,21 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
           )}
 
           {/* Active Staff User Chip */}
-          {currentUser ? (
+          {safeCurrentUser ? (
             <div
               className={`flex items-center gap-2 rounded-xl bg-white border border-[#E5ECE8] cursor-pointer hover:border-[#0f8a5f]/40 transition ${
                 isCollapsed ? 'justify-center p-1.5' : 'p-1.5'
               }`}
               onClick={handleLogout}
-              title={`${currentUser.display_name} (${currentUser.role}) — Click to Lock`}
+              title={`${safeCurrentUser.display_name} (${safeCurrentUser.role}) — Click to Lock`}
             >
               <div className="w-7 h-7 rounded-lg bg-[#072619] text-[#a3e04f] font-extrabold text-[10px] flex items-center justify-center shrink-0">
-                {getInitials(currentUser.display_name)}
+                {getInitials(safeCurrentUser.display_name)}
               </div>
               {!isCollapsed && (
                 <div className="overflow-hidden flex-1 leading-tight">
-                  <p className="text-xs font-bold text-[#072619] truncate">{currentUser.display_name}</p>
-                  <p className="text-[10px] text-[#4f675a] capitalize">{currentUser.role}</p>
+                  <p className="text-xs font-bold text-[#072619] truncate">{safeCurrentUser.display_name}</p>
+                  <p className="text-[10px] text-[#4f675a] capitalize">{safeCurrentUser.role}</p>
                 </div>
               )}
               {!isCollapsed && <Lock className="w-3.5 h-3.5 text-[#4f675a] mr-1" />}
@@ -474,7 +487,7 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
           )}
 
           {/* Logout Button */}
-          {currentUser && (
+          {safeCurrentUser && (
             <button
               type="button"
               onClick={handleLogout}

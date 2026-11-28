@@ -1,91 +1,87 @@
 -- ============================================================================
 -- RESTAURANT MANAGEMENT & POS SYSTEM - DISH IMAGES SEED MIGRATION
 -- Migration: 009_seed_dish_images.sql
--- Description: Idempotently populates realistic, high-resolution food photo URLs
---              for core seed menu items and category-matched dishes where image_url IS NULL.
+-- Description: Idempotently populates local studio 3D food image paths
+--              from /images/3d/ across core seed items and category-matched dishes,
+--              and bumps menu_versions so cached POS terminals refresh immediately.
 -- ============================================================================
 
--- 1. Explicit Seed Menu Item Images
+-- 1. Explicit Seed Menu Item Images (Case-Insensitive Matching, overwrites stale/null URLs)
 UPDATE menu_items
-SET image_url = 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=800&q=80'
+SET image_url = '/images/3d/food-curry-3d.jpg'
 WHERE id = '30000000-0000-0000-0000-000000000001'
-   OR (name ILIKE '%Chicken Fried Rice%' AND (image_url IS NULL OR image_url = ''));
+   OR name ILIKE '%Fried Rice%';
 
 UPDATE menu_items
-SET image_url = 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80'
+SET image_url = '/images/3d/food-burger-3d.jpg'
 WHERE id = '30000000-0000-0000-0000-000000000002'
-   OR (name ILIKE '%Beef Burger Deluxe%' AND (image_url IS NULL OR image_url = ''));
+   OR name ILIKE '%Burger%';
 
 UPDATE menu_items
-SET image_url = 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=800&q=80'
+SET image_url = '/images/3d/food-latte-3d.jpg'
 WHERE id = '30000000-0000-0000-0000-000000000003'
-   OR (name ILIKE '%Iced Coffee%' AND (image_url IS NULL OR image_url = ''));
+   OR name ILIKE '%Coffee%';
 
 UPDATE menu_items
-SET image_url = 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80'
+SET image_url = '/images/3d/food-feast-3d.svg'
 WHERE id = '30000000-0000-0000-0000-000000000004'
-   OR (name ILIKE '%Chocolate Lava Cake%' AND (image_url IS NULL OR image_url = ''));
+   OR name ILIKE '%Lava Cake%';
 
--- 2. Category-Matched Fallback for remaining custom dishes where image_url is missing
--- Rice, Biryani, Pasta & Noodles
+-- 2. Category-Matched Assignment for remaining dishes
+-- Rice, Biryani, Pasta, Curry & Noodles -> food-curry-3d.jpg
 UPDATE menu_items
-SET image_url = 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=800&q=80'
-WHERE (image_url IS NULL OR image_url = '')
-  AND (
-      name ILIKE '%rice%' OR 
-      name ILIKE '%biryani%' OR 
-      name ILIKE '%nasi%' OR 
-      name ILIKE '%noodle%' OR 
-      name ILIKE '%pasta%' OR 
-      name ILIKE '%kottu%'
-  );
+SET image_url = '/images/3d/food-curry-3d.jpg'
+WHERE name ILIKE '%rice%'
+   OR name ILIKE '%biryani%'
+   OR name ILIKE '%nasi%'
+   OR name ILIKE '%noodle%'
+   OR name ILIKE '%pasta%'
+   OR name ILIKE '%kottu%'
+   OR name ILIKE '%curry%';
 
--- Burgers, Grills, BBQ, Chicken & Steaks
+-- Burgers, Grills, BBQ, Steak & Sandwiches -> food-burger-3d.jpg
 UPDATE menu_items
-SET image_url = 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80'
-WHERE (image_url IS NULL OR image_url = '')
-  AND (
-      name ILIKE '%burger%' OR 
-      name ILIKE '%grill%' OR 
-      name ILIKE '%bbq%' OR 
-      name ILIKE '%steak%' OR 
-      name ILIKE '%sandwich%' OR 
-      name ILIKE '%wrap%' OR 
-      name ILIKE '%wings%' OR 
-      name ILIKE '%chicken%'
-  );
+SET image_url = '/images/3d/food-burger-3d.jpg'
+WHERE name ILIKE '%burger%'
+   OR name ILIKE '%grill%'
+   OR name ILIKE '%bbq%'
+   OR name ILIKE '%steak%'
+   OR name ILIKE '%sandwich%'
+   OR name ILIKE '%wrap%'
+   OR name ILIKE '%wings%';
 
--- Beverages, Coffee, Shakes, Teas & Juices
+-- Beverages, Coffee, Shakes, Teas & Juices -> food-latte-3d.jpg
 UPDATE menu_items
-SET image_url = 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=800&q=80'
-WHERE (image_url IS NULL OR image_url = '')
-  AND (
-      name ILIKE '%coffee%' OR 
-      name ILIKE '%tea%' OR 
-      name ILIKE '%juice%' OR 
-      name ILIKE '%shake%' OR 
-      name ILIKE '%smoothie%' OR 
-      name ILIKE '%mojito%' OR 
-      name ILIKE '%beverage%' OR 
-      name ILIKE '%soda%' OR 
-      name ILIKE '%drink%'
-  );
+SET image_url = '/images/3d/food-latte-3d.jpg'
+WHERE name ILIKE '%coffee%'
+   OR name ILIKE '%latte%'
+   OR name ILIKE '%tea%'
+   OR name ILIKE '%juice%'
+   OR name ILIKE '%shake%'
+   OR name ILIKE '%smoothie%'
+   OR name ILIKE '%mojito%'
+   OR name ILIKE '%beverage%'
+   OR name ILIKE '%soda%'
+   OR name ILIKE '%drink%';
 
--- Desserts, Cakes, Ice Cream & Sweets
+-- Desserts, Cakes, Ice Cream & Sweets -> food-feast-3d.svg
 UPDATE menu_items
-SET image_url = 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80'
-WHERE (image_url IS NULL OR image_url = '')
-  AND (
-      name ILIKE '%cake%' OR 
-      name ILIKE '%dessert%' OR 
-      name ILIKE '%pudding%' OR 
-      name ILIKE '%ice cream%' OR 
-      name ILIKE '%waffle%' OR 
-      name ILIKE '%sweet%' OR 
-      name ILIKE '%brownie%'
-  );
+SET image_url = '/images/3d/food-feast-3d.svg'
+WHERE name ILIKE '%cake%'
+   OR name ILIKE '%dessert%'
+   OR name ILIKE '%pudding%'
+   OR name ILIKE '%ice cream%'
+   OR name ILIKE '%waffle%'
+   OR name ILIKE '%sweet%'
+   OR name ILIKE '%brownie%'
+   OR name ILIKE '%combo%';
 
--- Catch-all for any remaining items without photos (Appetizer / Chef Special platter)
+-- Catch-all for any remaining items without photos
 UPDATE menu_items
-SET image_url = 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80'
-WHERE (image_url IS NULL OR image_url = '');
+SET image_url = '/images/3d/food-feast-3d.svg'
+WHERE image_url IS NULL OR image_url = '';
+
+-- 3. Bump menu_versions so cached Zustand POS clients auto-invalidate and reload images
+UPDATE menu_versions
+SET version_number = version_number + 1,
+    updated_at = TIMEZONE('utc', NOW());

@@ -37,7 +37,8 @@ export const useMenuStore = create<MenuState>()(
           set({ isLoading: true, error: null });
 
           // 1. Check current menu version from server
-          if (!forceRefresh && get().cachedVersion > 0 && get().items.length > 0) {
+          const hasMissingImages = get().items.some((i) => !i.image_url);
+          if (!forceRefresh && !hasMissingImages && get().cachedVersion > 0 && get().items.length > 0) {
             const versionRes = await fetch('/api/menu/version');
             if (versionRes.ok) {
               const versionData = await versionRes.json();
