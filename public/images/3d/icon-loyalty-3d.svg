@@ -1,0 +1,24 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="48" fill="#f4fbf7"/>
+  <defs>
+    <linearGradient id="crownG" x1="48" y1="64" x2="208" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#facc15"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="coinG" x1="150" y1="50" x2="215" y2="115" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#a3e04f"/>
+      <stop offset="100%" stop-color="#0f8a5f"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="128" cy="212" rx="74" ry="15" fill="#0b3d2c" fill-opacity="0.18"/>
+  <!-- 3D Crown -->
+  <path d="M46 98L84 134L128 72L172 134L210 98L194 182C192 190 185 196 176 196H80C71 196 64 190 62 182L46 98Z" fill="url(#crownG)"/>
+  <rect x="64" y="176" width="128" height="22" rx="11" fill="#0b3d2c"/>
+  <circle cx="128" cy="68" r="12" fill="#fde047"/>
+  <circle cx="44" cy="94" r="10" fill="#fde047"/>
+  <circle cx="212" cy="94" r="10" fill="#fde047"/>
+  <!-- Reward Star Coin -->
+  <circle cx="186" cy="78" r="32" fill="url(#coinG)" stroke="#ffffff" stroke-width="5"/>
+  <path d="M186 60L191 71L203 73L194 81L196 93L186 87L176 93L178 81L169 73L181 71L186 60Z" fill="#ffffff"/>
+</svg>

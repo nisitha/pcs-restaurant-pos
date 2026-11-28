@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { PinPad } from '@/components/auth/pin-pad';
 import { useAuthStore } from '@/stores/auth-store';
 import { StaffUser, UserRole } from '@/types/auth.types';
+import { Tilt3DCard, Floating3DElement, PulseBeacon } from '@/components/ui/Motion3D';
 import {
   UtensilsCrossed,
   UserCheck,
@@ -84,20 +85,60 @@ export default function LoginPage() {
       case 'manager':
         return <Shield className="w-3.5 h-3.5 text-purple-500" />;
       case 'cashier':
-        return <MonitorCheck className="w-3.5 h-3.5 text-[#119C49]" />;
+        return <MonitorCheck className="w-3.5 h-3.5 text-[#0f8a5f]" />;
       case 'waiter':
         return <Smartphone className="w-3.5 h-3.5 text-blue-500" />;
       case 'chef':
         return <ChefHat className="w-3.5 h-3.5 text-orange-500" />;
       default:
-        return <UserCheck className="w-3.5 h-3.5 text-[#7C828D]" />;
+        return <UserCheck className="w-3.5 h-3.5 text-[#4f675a]" />;
     }
   };
 
+  const terminalStations = [
+    {
+      role: 'cashier' as UserRole,
+      title: 'Counter POS',
+      subtitle: 'Cashier Terminal',
+      pin: '3333',
+      img: '/images/3d/pos-terminal-3d.jpg',
+      badge: '10s Billing',
+    },
+    {
+      role: 'chef' as UserRole,
+      title: 'Kitchen KDS',
+      subtitle: 'Prep Display',
+      pin: '5555',
+      img: '/images/3d/kds-screen-3d.jpg',
+      badge: 'Live Tickets',
+    },
+    {
+      role: 'waiter' as UserRole,
+      title: 'Captain Tab',
+      subtitle: 'Waiter Floor',
+      pin: '4444',
+      img: '/images/3d/captain-tab-3d.jpg',
+      badge: 'Table Flow',
+    },
+    {
+      role: 'owner' as UserRole,
+      title: 'Owner BI',
+      subtitle: 'Manager Hub',
+      pin: '1111',
+      img: '/images/3d/icon-analytics-3d.svg',
+      badge: 'Control Tower',
+    },
+  ];
+
+  const handleSelectTerminalStation = (role: UserRole) => {
+    const matched = staffList.find((s) => s.role === role) || null;
+    setSelectedStaff(matched);
+  };
+
   return (
-    <div className="min-h-screen w-full bg-[#f4fbf7] flex flex-col justify-between p-6">
+    <div className="min-h-screen w-full bg-[#f4fbf7] flex flex-col justify-between p-5 sm:p-6">
       {/* Brand Header */}
-      <header className="max-w-5xl mx-auto w-full flex items-center justify-between pb-4">
+      <header className="max-w-6xl mx-auto w-full flex items-center justify-between pb-4">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-[#072619] text-[#a3e04f] flex items-center justify-center font-bold border border-[#0f8a5f]/30 shadow-md">
             <UtensilsCrossed className="w-5 h-5" />
@@ -114,7 +155,7 @@ export default function LoginPage() {
 
         <div className="flex items-center gap-2.5">
           <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E5ECE8] text-xs font-bold text-[#072619] shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#0f8a5f] animate-pulse" />
+            <PulseBeacon color="#0f8a5f" size="sm" />
             <span>Hotline / WhatsApp: +94 78 76 76 576</span>
           </div>
           <Link
@@ -126,64 +167,128 @@ export default function LoginPage() {
         </div>
       </header>
 
-      {/* Main PIN Pad Card */}
-      <main className="max-w-md mx-auto w-full">
-        <div className="bg-white border border-[#E5ECE8] rounded-3xl p-8 shadow-xl shadow-[#072619]/5 text-center">
-          {/* Lock Icon Halo */}
-          <div className="w-16 h-16 rounded-2xl bg-[#cdeeb0]/60 text-[#0f8a5f] flex items-center justify-center mx-auto mb-4 border border-[#0f8a5f]/20 shadow-xs">
-            <Lock className="w-7 h-7" />
+      {/* Main Split Workspace: 3D Terminal Mode Cards + Staff PIN Pad */}
+      <main className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-center my-auto py-2">
+        {/* Left: 3D Terminal Station Showcase (7 cols) */}
+        <section className="lg:col-span-7 space-y-4">
+          <div className="space-y-1">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#cdeeb0] text-[#072619] text-[11px] font-extrabold uppercase tracking-wider">
+              <PulseBeacon color="#0f8a5f" size="sm" />
+              <span>Select Terminal Mode</span>
+            </span>
+            <h1 className="font-display text-2xl sm:text-3xl font-black text-[#072619] tracking-tight">
+              Choose Your Station &amp; Unlock
+            </h1>
+            <p className="text-xs text-[#4f675a]">
+              Tap a 3D station card below to pre-select your terminal role, or enter your 4-digit staff PIN directly.
+            </p>
           </div>
 
-          <h2 className="font-display text-2xl font-extrabold text-[#072619] tracking-tight">Staff PIN Login</h2>
-          <p className="text-xs text-[#4f675a] mt-1 mb-6">
-            Enter your 4-digit staff PIN code to unlock your station terminal.
-          </p>
+          <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
+            {terminalStations.map((stn, idx) => {
+              const isSelected =
+                selectedStaff?.role === stn.role ||
+                (stn.role === 'owner' && selectedStaff?.role === 'manager');
 
-          {/* Quick Staff Selection Chips */}
-          <div className="mb-6 flex flex-wrap items-center justify-center gap-1.5">
-            {staffList.map((staff) => {
-              const isSelected = selectedStaff?.id === staff.id;
               return (
-                <button
-                  key={staff.id}
-                  type="button"
-                  onClick={() => setSelectedStaff(isSelected ? null : staff)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition border ${
-                    isSelected
-                      ? 'bg-[#cdeeb0] border-[#0f8a5f] text-[#072619] shadow-xs'
-                      : 'bg-[#f4fbf7] border-[#E5ECE8] text-[#4f675a] hover:text-[#072619] hover:bg-[#e6f6ec]'
-                  }`}
-                >
-                  {getRoleIcon(staff.role)}
-                  <span>{staff.display_name}</span>
-                </button>
+                <Tilt3DCard key={stn.role} maxTilt={7} className="rounded-3xl">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTerminalStation(stn.role)}
+                    className={`w-full h-full text-left p-4 rounded-3xl bg-white border transition-all cursor-pointer flex flex-col justify-between gap-3 shadow-sm ${
+                      isSelected
+                        ? 'pcs-fx-ring border-[#0f8a5f] ring-2 ring-[#0f8a5f]/20 bg-[#f4fbf7]'
+                        : 'border-[#E5ECE8] hover:border-[#0f8a5f]/40 pcs-brand-card'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <Floating3DElement amplitude={5} rotate={2} duration={4.8} delay={idx * 0.35}>
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#f4fbf7] border border-[#E5ECE8] shadow-sm flex items-center justify-center p-1">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={stn.img}
+                            alt={stn.title}
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                        </div>
+                      </Floating3DElement>
+
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+                          isSelected
+                            ? 'bg-[#072619] text-[#a3e04f]'
+                            : 'bg-[#f4fbf7] text-[#0f8a5f] border border-[#E5ECE8]'
+                        }`}
+                      >
+                        {stn.badge}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="font-display text-base font-black text-[#072619] leading-tight">
+                        {stn.title}
+                      </h3>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[11px] font-semibold text-[#4f675a]">{stn.subtitle}</span>
+                        <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded-md bg-[#cdeeb0]/60 text-[#072619]">
+                          PIN {stn.pin}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                </Tilt3DCard>
               );
             })}
           </div>
+        </section>
 
-          {/* Keypad */}
-          <PinPad
-            pin={pin}
-            onPinChange={setPin}
-            onSubmit={handlePinSubmit}
-            isLoading={isLoading}
-            errorMessage={errorMessage}
-          />
-        </div>
+        {/* Right: PIN Pad Card (5 cols) */}
+        <section className="lg:col-span-5 w-full max-w-md mx-auto">
+          <div className="bg-white border border-[#E5ECE8] rounded-3xl p-6 sm:p-7 shadow-xl shadow-[#072619]/5 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#cdeeb0]/60 text-[#0f8a5f] flex items-center justify-center mx-auto mb-3 border border-[#0f8a5f]/20 shadow-xs">
+              <Lock className="w-6 h-6" />
+            </div>
 
-        {/* Demo Fast PIN Hints */}
-        <div className="mt-4 p-4 rounded-2xl bg-white border border-[#E5ECE8] shadow-xs text-center">
-          <p className="text-[11px] font-bold text-[#4f675a] uppercase tracking-wide mb-2">
-            Default Demo PINs:
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-mono font-bold">
-            <span className="text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">Owner: 1111</span>
-            <span className="text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">Manager: 2222</span>
-            <span className="text-[#072619] bg-[#cdeeb0] px-2.5 py-1 rounded-full border border-[#0f8a5f]/30">Cashier: 3333</span>
-            <span className="text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">Waiter: 4444</span>
-            <span className="text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">Chef: 5555</span>
+            <h2 className="font-display text-xl font-extrabold text-[#072619] tracking-tight">
+              Staff PIN Login
+            </h2>
+            <p className="text-xs text-[#4f675a] mt-1 mb-4">
+              {selectedStaff
+                ? `Unlocking as ${selectedStaff.display_name} (${selectedStaff.role})`
+                : 'Enter your 4-digit staff PIN code to unlock terminal.'}
+            </p>
+
+            {/* Quick Staff Selection Chips */}
+            <div className="mb-5 flex flex-wrap items-center justify-center gap-1.5">
+              {staffList.map((staff) => {
+                const isSelected = selectedStaff?.id === staff.id;
+                return (
+                  <button
+                    key={staff.id}
+                    type="button"
+                    onClick={() => setSelectedStaff(isSelected ? null : staff)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition border cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#cdeeb0] border-[#0f8a5f] text-[#072619] shadow-xs'
+                        : 'bg-[#f4fbf7] border-[#E5ECE8] text-[#4f675a] hover:text-[#072619]'
+                    }`}
+                  >
+                    {getRoleIcon(staff.role)}
+                    <span>{staff.display_name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <PinPad
+              pin={pin}
+              onPinChange={setPin}
+              onSubmit={handlePinSubmit}
+              isLoading={isLoading}
+              errorMessage={errorMessage}
+            />
           </div>
-        </div>
+        </section>
       </main>
 
       {/* Footer */}

@@ -82,6 +82,109 @@
   scrollbar-width: none;
 }
 
+/* === Brand Card Hover Conic Ring & Sheen === */
+.pcs-brand-card {
+  position: relative;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #E5ECE8, 0 10px 24px -20px rgba(11, 61, 44, 0.25);
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+}
+
+.pcs-brand-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 1px rgba(15, 138, 95, 0.45), 0 18px 34px -18px rgba(11, 61, 44, 0.35);
+}
+
+.pcs-brand-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(163, 224, 79, 0.16) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.65s ease;
+  pointer-events: none;
+}
+
+.pcs-brand-card:hover::after {
+  transform: translateX(120%);
+}
+
+/* === Rotating Conic Perimeter Glow Ring === */
+@property --pcs-ang {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes pcsConicSpin {
+  to {
+    --pcs-ang: 360deg;
+  }
+}
+
+.pcs-fx-ring {
+  position: relative;
+}
+
+.pcs-fx-ring::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--pcs-ang),
+    rgba(15, 138, 95, 0.12) 0deg,
+    rgba(163, 224, 79, 0.85) 60deg,
+    rgba(15, 138, 95, 0.25) 140deg,
+    rgba(15, 138, 95, 0.08) 260deg,
+    rgba(163, 224, 79, 0.7) 330deg,
+    rgba(15, 138, 95, 0.12) 360deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: pcsConicSpin 6s linear infinite;
+}
+
+/* === Periodic Diagonal Glare Sweep === */
+@keyframes pcsDiagShine {
+  0%, 72% { transform: translateX(-140%) skewX(-18deg); }
+  100% { transform: translateX(220%) skewX(-18deg); }
+}
+
+.pcs-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.pcs-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+  animation: pcsDiagShine 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* === Scalloped Paper Tear Edge === */
+.pcs-ticket-scallop {
+  background-image: radial-gradient(circle at 8px 0, transparent 5px, #f4fbf7 5.5px);
+  background-size: 16px 8px;
+  background-repeat: repeat-x;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pcs-fx-ring::before,
+  .pcs-shine::after {
+    animation: none !important;
+  }
+}
+
 /* Thermal Receipt Screen Guard */
 #thermal-print-root {
   display: none;

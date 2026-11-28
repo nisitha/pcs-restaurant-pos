@@ -29,6 +29,7 @@ import { MenuItem } from '@/types/menu.types';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { DishImage } from '@/components/ui/dish-image';
 import { useBranchStore } from '@/stores/branch-store';
+import { Tilt3DCard, Floating3DElement } from '@/components/ui/Motion3D';
 
 export default function AdminDashboardPage() {
   const { activeBranchId, activeBranch } = useBranchStore();
@@ -132,18 +133,26 @@ export default function AdminDashboardPage() {
     <div className="flex-1 p-6 sm:p-8 max-w-7xl mx-auto w-full overflow-y-auto scrollbar-none space-y-6 bg-[#f4fbf7]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5ECE8] pb-5">
-        <div>
-          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#cdeeb0] text-[#072619] text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
-            <span>PCS Bill OS</span>
-            <span>&bull;</span>
-            <span>{activeBranch?.name || 'Colombo Main'}</span>
+        <div className="flex items-center gap-4">
+          <Floating3DElement amplitude={4} rotate={1.5} duration={5.2}>
+            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white border border-[#E5ECE8] shadow-md p-1 shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/3d/icon-analytics-3d.svg" alt="Analytics 3D" className="w-full h-full object-contain" />
+            </div>
+          </Floating3DElement>
+          <div>
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#cdeeb0] text-[#072619] text-[10px] font-extrabold uppercase tracking-wider mb-1">
+              <span>PCS Bill OS</span>
+              <span>&bull;</span>
+              <span>{activeBranch?.name || 'Colombo Main'}</span>
+            </div>
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#072619] flex items-center gap-2.5 tracking-tight">
+              Executive Control Tower
+            </h1>
+            <p className="text-xs text-[#4f675a] mt-0.5">
+              Live outlet sales velocity, top-performing dishes, stock valuation, and anti-theft audit alerts.
+            </p>
           </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#072619] flex items-center gap-2.5 tracking-tight">
-            <LayoutDashboard className="w-7 h-7 text-[#0f8a5f]" /> Executive Control Tower
-          </h1>
-          <p className="text-xs text-[#4f675a] mt-1">
-            Live outlet sales velocity, top-performing dishes, stock valuation, and anti-theft audit alerts.
-          </p>
         </div>
 
         <Button
@@ -156,51 +165,83 @@ export default function AdminDashboardPage() {
         </Button>
       </div>
 
-      {/* Executive KPI Cards */}
+      {/* Executive KPI Cards with Tilt3DCard & 3D Glossy Icons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-3xl bg-[#072619] text-white shadow-md">
-          <span className="text-xs text-white/70 font-medium block mb-1">Gross Outlet Sales</span>
-          <p className="font-display text-2xl font-black text-[#a3e04f] font-mono">
-            <AnimatedCounter value={displayGrossSales} prefix="Rs. " decimals={2} />
-          </p>
-          <span className="text-[11px] text-[#cdeeb0] font-bold flex items-center gap-1 mt-2">
-            <TrendingUp className="w-3.5 h-3.5" /> {paidOrActiveOrders.length || 14} Settled Orders
-          </span>
-        </div>
+        <Tilt3DCard maxTilt={6} className="rounded-3xl">
+          <div className="h-full p-5 rounded-3xl bg-[#072619] text-white shadow-md flex items-start justify-between gap-3">
+            <div>
+              <span className="text-xs text-white/70 font-medium block mb-1">Gross Outlet Sales</span>
+              <p className="font-display text-2xl font-black text-[#a3e04f] font-mono">
+                <AnimatedCounter value={displayGrossSales} prefix="Rs. " decimals={2} />
+              </p>
+              <span className="text-[11px] text-[#cdeeb0] font-bold flex items-center gap-1 mt-2">
+                <TrendingUp className="w-3.5 h-3.5" /> {paidOrActiveOrders.length || 14} Settled Orders
+              </span>
+            </div>
+            <div className="w-11 h-11 rounded-2xl overflow-hidden bg-white/10 border border-white/15 shrink-0 p-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/3d/icon-pos-3d.jpg" alt="Sales" className="w-full h-full object-cover rounded-xl" />
+            </div>
+          </div>
+        </Tilt3DCard>
 
-        <div className="p-5 rounded-3xl bg-white border border-[#E5ECE8] shadow-xs">
-          <span className="text-xs text-[#4f675a] font-medium block mb-1">Total Stock Valuation</span>
-          <p className="font-display text-2xl font-black text-[#072619] font-mono">
-            <AnimatedCounter value={totalValuation} prefix="Rs. " decimals={2} />
-          </p>
-          <span className="text-[11px] text-[#4f675a] block mt-2">
-            <AnimatedCounter value={ingredients.length} suffix=" Tracked Ingredients" />
-          </span>
-        </div>
+        <Tilt3DCard maxTilt={6} className="rounded-3xl">
+          <div className="h-full p-5 rounded-3xl bg-white border border-[#E5ECE8] shadow-xs flex items-start justify-between gap-3">
+            <div>
+              <span className="text-xs text-[#4f675a] font-medium block mb-1">Total Stock Valuation</span>
+              <p className="font-display text-2xl font-black text-[#072619] font-mono">
+                <AnimatedCounter value={totalValuation} prefix="Rs. " decimals={2} />
+              </p>
+              <span className="text-[11px] text-[#4f675a] block mt-2">
+                <AnimatedCounter value={ingredients.length} suffix=" Tracked Ingredients" />
+              </span>
+            </div>
+            <div className="w-11 h-11 rounded-2xl overflow-hidden bg-[#f4fbf7] border border-[#E5ECE8] shrink-0 p-0.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/3d/icon-inventory-3d.jpg" alt="Inventory" className="w-full h-full object-cover rounded-xl" />
+            </div>
+          </div>
+        </Tilt3DCard>
 
-        <div className="p-5 rounded-3xl bg-white border border-[#E5ECE8] shadow-xs">
-          <span className="text-xs text-[#4f675a] font-medium block mb-1">Live Kitchen Queue</span>
-          <p className="font-display text-2xl font-black text-[#0f8a5f] font-mono">
-            <AnimatedCounter value={activeKitchenOrders.length} suffix=" Active" />
-          </p>
-          <span className="text-[11px] text-[#4f675a] flex items-center gap-1 mt-2">
-            <Flame className="w-3.5 h-3.5 text-[#F59E0B]" /> Real-time KDS sync
-          </span>
-        </div>
+        <Tilt3DCard maxTilt={6} className="rounded-3xl">
+          <div className="h-full p-5 rounded-3xl bg-white border border-[#E5ECE8] shadow-xs flex items-start justify-between gap-3">
+            <div>
+              <span className="text-xs text-[#4f675a] font-medium block mb-1">Live Kitchen Queue</span>
+              <p className="font-display text-2xl font-black text-[#0f8a5f] font-mono">
+                <AnimatedCounter value={activeKitchenOrders.length} suffix=" Active" />
+              </p>
+              <span className="text-[11px] text-[#4f675a] flex items-center gap-1 mt-2">
+                <Flame className="w-3.5 h-3.5 text-[#F59E0B]" /> Real-time KDS sync
+              </span>
+            </div>
+            <div className="w-11 h-11 rounded-2xl overflow-hidden bg-[#f4fbf7] border border-[#E5ECE8] shrink-0 p-0.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/3d/icon-kds-3d.jpg" alt="KDS" className="w-full h-full object-cover rounded-xl" />
+            </div>
+          </div>
+        </Tilt3DCard>
 
-        <div className="p-5 rounded-3xl bg-white border border-[#E5ECE8] shadow-xs">
-          <span className="text-xs text-[#4f675a] font-medium block mb-1">Audit & Low Stock Alerts</span>
-          <p
-            className={`font-display text-2xl font-black font-mono ${
-              lowStockItems.length + voidOrRefundedOrders.length > 0 ? 'text-rose-600' : 'text-[#0f8a5f]'
-            }`}
-          >
-            <AnimatedCounter value={lowStockItems.length + voidOrRefundedOrders.length} suffix=" Alerts" />
-          </p>
-          <span className="text-[11px] text-[#4f675a] block mt-2">
-            PIN Audit Guard (2222 / 1111)
-          </span>
-        </div>
+        <Tilt3DCard maxTilt={6} className="rounded-3xl">
+          <div className="h-full p-5 rounded-3xl bg-white border border-[#E5ECE8] shadow-xs flex items-start justify-between gap-3">
+            <div>
+              <span className="text-xs text-[#4f675a] font-medium block mb-1">Audit &amp; Low Stock Alerts</span>
+              <p
+                className={`font-display text-2xl font-black font-mono ${
+                  lowStockItems.length + voidOrRefundedOrders.length > 0 ? 'text-rose-600' : 'text-[#0f8a5f]'
+                }`}
+              >
+                <AnimatedCounter value={lowStockItems.length + voidOrRefundedOrders.length} suffix=" Alerts" />
+              </p>
+              <span className="text-[11px] text-[#4f675a] block mt-2">
+                PIN Audit Guard (2222 / 1111)
+              </span>
+            </div>
+            <div className="w-11 h-11 rounded-2xl overflow-hidden bg-[#f4fbf7] border border-[#E5ECE8] shrink-0 p-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/3d/icon-loyalty-3d.svg" alt="Audit" className="w-full h-full object-contain" />
+            </div>
+          </div>
+        </Tilt3DCard>
       </div>
 
       {/* Live Outlet Sales Breakdown + Anti-Theft Audit Alerts */}

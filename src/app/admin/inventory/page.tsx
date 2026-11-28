@@ -29,6 +29,7 @@ import {
 import { formatLKR } from '@/lib/utils/currency';
 import { formatRestaurantDateTime } from '@/lib/utils/datetime';
 import { Ingredient, StockMovement, WastageLog } from '@/types/inventory.types';
+import { Tilt3DCard, Floating3DElement } from '@/components/ui/Motion3D';
 
 export default function AdminInventoryPage() {
   const [activeTab, setActiveTab] = useState<'stock' | 'movements' | 'wastage'>('stock');
@@ -201,13 +202,21 @@ export default function AdminInventoryPage() {
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1D1F] flex items-center gap-2.5">
-            <Boxes className="w-7 h-7 text-[#119C49]" /> Inventory, Stock & Wastage
-          </h1>
-          <p className="text-xs text-[#7C828D] mt-1">
-            Real-time ingredient levels, physical variance audits, and wastage tracking in LKR.
-          </p>
+        <div className="flex items-center gap-3.5">
+          <Floating3DElement amplitude={4} rotate={1.5} duration={5}>
+            <div className="w-13 h-13 rounded-2xl overflow-hidden bg-white border border-[#E5ECE8] shadow-md p-0.5 shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/3d/icon-inventory-3d.jpg" alt="Inventory 3D" className="w-full h-full object-cover rounded-xl" />
+            </div>
+          </Floating3DElement>
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#072619] flex items-center gap-2.5">
+              Inventory, Stock &amp; Wastage
+            </h1>
+            <p className="text-xs text-[#4f675a] mt-0.5">
+              Real-time ingredient levels, physical variance audits, and wastage tracking in LKR.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -244,55 +253,63 @@ export default function AdminInventoryPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#D1F0DC] text-[#119C49] flex items-center justify-center">
-            <DollarSign className="w-6 h-6" />
+        <Tilt3DCard maxTilt={5} className="rounded-3xl">
+          <div className="h-full bg-white rounded-3xl p-5 border border-[#E5ECE8] shadow-xs flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#cdeeb0]/60 text-[#0f8a5f] flex items-center justify-center shrink-0">
+              <DollarSign className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-[#4f675a] font-medium">Total Inventory Value</p>
+              <p className="font-display text-xl font-black text-[#072619] font-mono">{formatLKR(totalValuation)}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-[#7C828D] font-medium">Total Inventory Value</p>
-            <p className="text-xl font-black text-[#1A1D1F] font-mono">{formatLKR(totalValuation)}</p>
-          </div>
-        </div>
+        </Tilt3DCard>
 
-        <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#F6F7F9] text-[#1A1D1F] flex items-center justify-center">
-            <Layers className="w-6 h-6" />
+        <Tilt3DCard maxTilt={5} className="rounded-3xl">
+          <div className="h-full bg-white rounded-3xl p-5 border border-[#E5ECE8] shadow-xs flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#f4fbf7] text-[#072619] flex items-center justify-center shrink-0">
+              <Layers className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-[#4f675a] font-medium">Tracked Ingredients</p>
+              <p className="font-display text-xl font-black text-[#072619]">{ingredients.length} Items</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-[#7C828D] font-medium">Tracked Ingredients</p>
-            <p className="text-xl font-black text-[#1A1D1F]">{ingredients.length} Items</p>
-          </div>
-        </div>
+        </Tilt3DCard>
 
-        <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm flex items-center gap-3.5">
-          <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-              lowStockCount > 0 ? 'bg-red-50 text-red-600' : 'bg-[#D1F0DC] text-[#119C49]'
-            }`}
-          >
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs text-[#7C828D] font-medium">Low Stock Alerts</p>
-            <p
-              className={`text-xl font-black ${
-                lowStockCount > 0 ? 'text-red-600' : 'text-[#119C49]'
+        <Tilt3DCard maxTilt={5} className="rounded-3xl">
+          <div className="h-full bg-white rounded-3xl p-5 border border-[#E5ECE8] shadow-xs flex items-center gap-3.5">
+            <div
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                lowStockCount > 0 ? 'bg-red-50 text-red-600' : 'bg-[#cdeeb0]/60 text-[#0f8a5f]'
               }`}
             >
-              {lowStockCount} Items
-            </p>
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-[#4f675a] font-medium">Low Stock Alerts</p>
+              <p
+                className={`font-display text-xl font-black ${
+                  lowStockCount > 0 ? 'text-red-600' : 'text-[#0f8a5f]'
+                }`}
+              >
+                {lowStockCount} Items
+              </p>
+            </div>
           </div>
-        </div>
+        </Tilt3DCard>
 
-        <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#FEF3E2] text-[#F59E0B] flex items-center justify-center">
-            <TrendingDown className="w-6 h-6" />
+        <Tilt3DCard maxTilt={5} className="rounded-3xl">
+          <div className="h-full bg-white rounded-3xl p-5 border border-[#E5ECE8] shadow-xs flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#FEF3E2] text-[#F59E0B] flex items-center justify-center shrink-0">
+              <TrendingDown className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-[#4f675a] font-medium">Logged Wastage</p>
+              <p className="font-display text-xl font-black text-[#072619] font-mono">{formatLKR(totalWastageCost)}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-[#7C828D] font-medium">Logged Wastage</p>
-            <p className="text-xl font-black text-[#1A1D1F] font-mono">{formatLKR(totalWastageCost)}</p>
-          </div>
-        </div>
+        </Tilt3DCard>
       </div>
 
       {/* Navigation Tabs */}

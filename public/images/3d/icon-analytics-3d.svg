@@ -1,0 +1,27 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="48" fill="#f4fbf7"/>
+  <defs>
+    <linearGradient id="bar1" x1="0" y1="130" x2="0" y2="196" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#13a58c"/>
+      <stop offset="100%" stop-color="#0b3d2c"/>
+    </linearGradient>
+    <linearGradient id="bar2" x1="0" y1="95" x2="0" y2="196" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#119464"/>
+      <stop offset="100%" stop-color="#0b3d2c"/>
+    </linearGradient>
+    <linearGradient id="bar3" x1="0" y1="54" x2="0" y2="196" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#a3e04f"/>
+      <stop offset="100%" stop-color="#0f8a5f"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="128" cy="214" rx="76" ry="14" fill="#0b3d2c" fill-opacity="0.18"/>
+  <!-- Pedestal -->
+  <rect x="44" y="182" width="168" height="20" rx="10" fill="#072619"/>
+  <!-- 3D Bars -->
+  <rect x="60" y="132" width="34" height="54" rx="10" fill="url(#bar1)"/>
+  <rect x="111" y="96" width="34" height="90" rx="10" fill="url(#bar2)"/>
+  <rect x="162" y="56" width="34" height="130" rx="10" fill="url(#bar3)"/>
+  <!-- Growth Curve Arrow -->
+  <path d="M58 110C92 104 128 84 156 50" stroke="#a3e04f" stroke-width="9" stroke-linecap="round"/>
+  <path d="M138 46H162V70" stroke="#a3e04f" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

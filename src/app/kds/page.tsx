@@ -14,11 +14,12 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
 import { useKdsRealtime } from '@/hooks/use-kds-realtime';
 import { TicketCard } from '@/components/kds/ticket-card';
+import { Floating3DElement, PulseBeacon } from '@/components/ui/Motion3D';
 
 export default function KdsPage() {
   const { currentUser } = useAuthStore();
@@ -79,9 +80,16 @@ export default function KdsPage() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#072619] text-[#a3e04f] flex items-center justify-center font-bold shadow-sm">
-                <ChefHat className="w-5 h-5" />
-              </div>
+              <Floating3DElement amplitude={4} rotate={1.5} duration={5}>
+                <div className="w-12 h-12 rounded-2xl overflow-hidden bg-[#072619] border border-[#0f8a5f]/30 shadow-md p-0.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/images/3d/icon-kds-3d.jpg"
+                    alt="KDS 3D"
+                    className="w-full h-full object-cover rounded-xl"
+                  />
+                </div>
+              </Floating3DElement>
               <div>
                 <h1 className="font-display text-lg font-extrabold tracking-tight text-[#072619] leading-tight">
                   Kitchen Display System
@@ -97,11 +105,7 @@ export default function KdsPage() {
                         : 'bg-[#FEF3E2] text-[#B45309] border-[#FDE3B8]'
                     }`}
                   >
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        connectionStatus === 'connected' ? 'bg-[#0f8a5f] animate-pulse' : 'bg-[#F59E0B]'
-                      }`}
-                    />
+                    <PulseBeacon color={connectionStatus === 'connected' ? '#0f8a5f' : '#F59E0B'} size="sm" />
                     <span>{connectionStatus === 'connected' ? 'LIVE SYNC' : connectionStatus.toUpperCase()}</span>
                   </div>
                 </div>
@@ -240,18 +244,20 @@ export default function KdsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {displayedTickets.map((ticket) => (
-              <TicketCard
-                key={ticket.id}
-                ticket={ticket}
-                onStart={handleStartPrep}
-                onReady={handleMarkReady}
-                onRecall={activeView === 'recall' ? handleRecall : undefined}
-                isActionLoading={isLoading}
-              />
-            ))}
-          </div>
+          <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            <AnimatePresence mode="popLayout">
+              {displayedTickets.map((ticket) => (
+                <TicketCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  onStart={handleStartPrep}
+                  onReady={handleMarkReady}
+                  onRecall={activeView === 'recall' ? handleRecall : undefined}
+                  isActionLoading={isLoading}
+                />
+              ))}
+            </AnimatePresence>
+          </motion.div>
         )}
       </main>
     </div>

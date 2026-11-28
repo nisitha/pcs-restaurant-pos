@@ -221,6 +221,21 @@ export default function PosBillingPage() {
     };
   }, [fetchMenu, fetchLiveOrders]);
 
+  // Category 3D Asset Mapper
+  const getCategory3DImage = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('burger') || lower.includes('grill') || lower.includes('sandwich')) {
+      return '/images/3d/food-burger-3d.jpg';
+    }
+    if (lower.includes('beverage') || lower.includes('drink') || lower.includes('coffee') || lower.includes('latte') || lower.includes('tea')) {
+      return '/images/3d/food-latte-3d.jpg';
+    }
+    if (lower.includes('rice') || lower.includes('curry') || lower.includes('main') || lower.includes('hot')) {
+      return '/images/3d/food-curry-3d.jpg';
+    }
+    return '/images/3d/food-feast-3d.svg';
+  };
+
   // Fallback category icon mapper
   const getCategoryIcon = (name: string) => {
     const lower = name.toLowerCase();
@@ -658,67 +673,69 @@ export default function PosBillingPage() {
           </div>
         </header>
 
-        {/* Sleek Horizontal Category Pill Tabs with Framer Motion layoutId */}
-        <div className="px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 border-b border-[#E5ECE8]/70 bg-[#f4fbf7]">
+        {/* Tactile 3D Category Cards Strip with Framer Motion layoutId + .pcs-shine */}
+        <div className="px-4 py-2.5 flex items-center gap-2.5 overflow-x-auto scrollbar-none shrink-0 border-b border-[#E5ECE8]/70 bg-[#f4fbf7]">
           <button
             type="button"
             onClick={() => setSelectedCategory('all')}
-            className={`relative px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
+            className={`relative min-w-[118px] px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2.5 shrink-0 cursor-pointer pcs-shine ${
               selectedCategory === 'all'
-                ? 'text-white'
-                : 'bg-white border border-[#E5ECE8] text-[#4f675a] hover:text-[#072619]'
+                ? 'text-white shadow-md shadow-[#0f8a5f]/20'
+                : 'bg-white border border-[#E5ECE8] text-[#072619] hover:border-[#0f8a5f]/40'
             }`}
           >
             {selectedCategory === 'all' && (
               <motion.div
                 layoutId="active-pos-category"
-                className="absolute inset-0 bg-[#0f8a5f] rounded-full shadow-sm shadow-[#0f8a5f]/25"
+                className="absolute inset-0 bg-[#072619] rounded-2xl"
                 transition={{ type: 'spring', stiffness: 450, damping: 32 }}
               />
             )}
-            <Layers className={`relative z-10 w-3.5 h-3.5 ${selectedCategory === 'all' ? 'text-[#a3e04f]' : ''}`} />
-            <span className="relative z-10">All</span>
-            <span
-              className={`relative z-10 px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${
-                selectedCategory === 'all' ? 'bg-white/20 text-white' : 'bg-[#f4fbf7] text-[#4f675a]'
-              }`}
-            >
-              {items.filter((i) => i.is_available).length}
-            </span>
+            <div className="relative z-10 w-8 h-8 rounded-xl overflow-hidden bg-[#f4fbf7] border border-[#E5ECE8] shrink-0 p-0.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/3d/food-feast-3d.svg" alt="All" className="w-full h-full object-contain" />
+            </div>
+            <div className="relative z-10 text-left leading-tight">
+              <span className="block font-extrabold">All Menu</span>
+              <span className={`text-[10px] font-mono ${selectedCategory === 'all' ? 'text-[#a3e04f]' : 'text-[#4f675a]'}`}>
+                {items.filter((i) => i.is_available).length} items
+              </span>
+            </div>
           </button>
 
           {categories.map((cat) => {
-            const Icon = getCategoryIcon(cat.name);
             const isSelected = selectedCategory === cat.id;
             const categoryItemCount = items.filter((i) => i.category_id === cat.id && i.is_available).length;
+            const img3d = getCategory3DImage(cat.name);
 
             return (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`relative px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
+                className={`relative min-w-[132px] px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2.5 shrink-0 cursor-pointer pcs-shine ${
                   isSelected
-                    ? 'text-white'
-                    : 'bg-white border border-[#E5ECE8] text-[#4f675a] hover:text-[#072619]'
+                    ? 'text-white shadow-md shadow-[#0f8a5f]/20'
+                    : 'bg-white border border-[#E5ECE8] text-[#072619] hover:border-[#0f8a5f]/40'
                 }`}
               >
                 {isSelected && (
                   <motion.div
                     layoutId="active-pos-category"
-                    className="absolute inset-0 bg-[#0f8a5f] rounded-full shadow-sm shadow-[#0f8a5f]/25"
+                    className="absolute inset-0 bg-[#072619] rounded-2xl"
                     transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                   />
                 )}
-                <Icon className={`relative z-10 w-3.5 h-3.5 ${isSelected ? 'text-[#a3e04f]' : ''}`} />
-                <span className="relative z-10 whitespace-nowrap">{cat.name}</span>
-                <span
-                  className={`relative z-10 px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-[#f4fbf7] text-[#4f675a]'
-                  }`}
-                >
-                  {categoryItemCount}
-                </span>
+                <div className="relative z-10 w-8 h-8 rounded-xl overflow-hidden bg-[#f4fbf7] border border-[#E5ECE8] shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img3d} alt={cat.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="relative z-10 text-left leading-tight min-w-0">
+                  <span className="block font-extrabold truncate max-w-[96px]">{cat.name}</span>
+                  <span className={`text-[10px] font-mono ${isSelected ? 'text-[#a3e04f]' : 'text-[#4f675a]'}`}>
+                    {categoryItemCount} items
+                  </span>
+                </div>
               </button>
             );
           })}
@@ -1013,9 +1030,15 @@ export default function PosBillingPage() {
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-5 text-center text-xs font-black font-mono text-[#072619]">
+                        <motion.span
+                          key={cItem.quantity}
+                          initial={{ scale: 1.35, color: '#0f8a5f' }}
+                          animate={{ scale: 1, color: '#072619' }}
+                          transition={{ type: 'spring', stiffness: 450, damping: 20 }}
+                          className="w-5 text-center text-xs font-black font-mono text-[#072619]"
+                        >
                           {cItem.quantity}
-                        </span>
+                        </motion.span>
                         <button
                           type="button"
                           onClick={() => updateItemQuantity(cItem.cart_item_id, 1)}

@@ -268,10 +268,11 @@ export default function OrdersHistoryPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleNotifyWhatsApp(order)}
-                      className="rounded-xl border-[#0f8a5f]/30 bg-[#cdeeb0]/40 text-[#072619] hover:bg-[#cdeeb0] text-xs font-bold h-8 px-2.5 gap-1 transition cursor-pointer"
+                      className="rounded-xl border-[#0f8a5f]/30 bg-[#cdeeb0]/40 text-[#072619] hover:bg-[#cdeeb0] text-xs font-bold h-8 px-2.5 gap-1.5 transition cursor-pointer"
                       title="Send WhatsApp Status Update"
                     >
-                      <MessageCircle className="w-3.5 h-3.5 text-[#0f8a5f]" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/images/3d/icon-whatsapp-3d.svg" alt="WhatsApp" className="w-3.5 h-3.5 object-contain" />
                       <span>WhatsApp</span>
                     </Button>
 

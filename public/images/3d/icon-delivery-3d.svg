@@ -1,0 +1,36 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="48" fill="#f4fbf7"/>
+  <defs>
+    <radialGradient id="shadowD" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0b3d2c" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#0b3d2c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="boxTop" x1="40" y1="40" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#a3e04f"/>
+      <stop offset="100%" stop-color="#119464"/>
+    </linearGradient>
+    <linearGradient id="scooterBody" x1="80" y1="90" x2="210" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14915f"/>
+      <stop offset="100%" stop-color="#0b3d2c"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="128" cy="212" rx="86" ry="18" fill="url(#shadowD)"/>
+  <!-- Delivery Box -->
+  <path d="M52 88L98 66L134 84L88 106L52 88Z" fill="url(#boxTop)"/>
+  <path d="M52 88L88 106V146L52 128V88Z" fill="#0f8a5f"/>
+  <path d="M88 106L134 84V124L88 146V106Z" fill="#0b3d2c"/>
+  <path d="M74 96L108 80" stroke="#ffffff" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round"/>
+  <!-- Scooter Rear & Deck -->
+  <path d="M74 148C74 134 90 126 116 126H148L164 90C167 83 176 80 184 82L198 86C205 88 208 96 204 102L190 124C204 130 212 144 212 162H186C184 150 174 144 162 144H120C106 144 96 152 94 164H74V148Z" fill="url(#scooterBody)"/>
+  <!-- Handlebars & Headlight -->
+  <path d="M168 82L192 72" stroke="#a3e04f" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="204" cy="108" r="9" fill="#a3e04f"/>
+  <!-- Wheels -->
+  <circle cx="88" cy="176" r="24" fill="#072619"/>
+  <circle cx="88" cy="176" r="11" fill="#a3e04f"/>
+  <circle cx="184" cy="176" r="24" fill="#072619"/>
+  <circle cx="184" cy="176" r="11" fill="#a3e04f"/>
+  <!-- Speed Streak -->
+  <rect x="28" y="156" width="26" height="6" rx="3" fill="#a3e04f"/>
+  <rect x="18" y="170" width="34" height="5" rx="2.5" fill="#119464" fill-opacity="0.55"/>
+</svg>

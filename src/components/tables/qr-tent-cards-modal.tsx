@@ -115,7 +115,8 @@ export function QrTentCardsModal({ isOpen, onClose, tables, selectedTable }: QrT
               >
                 {/* Brand Badge */}
                 <div className="flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#072619] text-[#a3e04f] text-xs font-bold uppercase tracking-wider mb-3">
-                  <Utensils className="w-3.5 h-3.5" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/3d/qr-table-3d.jpg" alt="QR Table" className="w-4 h-4 rounded-sm object-cover print:hidden" />
                   <span>PCS Bill</span>
                 </div>
 

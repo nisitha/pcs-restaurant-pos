@@ -1,0 +1,26 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="48" fill="#f4fbf7"/>
+  <defs>
+    <linearGradient id="waBubble" x1="48" y1="42" x2="206" y2="206" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#25d366"/>
+      <stop offset="55%" stop-color="#0f8a5f"/>
+      <stop offset="100%" stop-color="#0b3d2c"/>
+    </linearGradient>
+    <linearGradient id="waGloss" x1="60" y1="44" x2="170" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="128" cy="216" rx="72" ry="15" fill="#0b3d2c" fill-opacity="0.18"/>
+  <!-- 3D Chat Bubble -->
+  <path d="M128 42C78.3 42 38 78.6 38 123.8C38 144.2 46.2 162.8 59.8 177.1L48 212L85.4 196.7C98.4 202.4 112.8 205.6 128 205.6C177.7 205.6 218 169 218 123.8C218 78.6 177.7 42 128 42Z" fill="url(#waBubble)"/>
+  <path d="M128 48C84 48 48 80 48 118C48 134 54 148 64 160C82 110 132 76 196 84C181 62 156 48 128 48Z" fill="url(#waGloss)"/>
+  <!-- Floating Receipt Slip inside Bubble -->
+  <rect x="88" y="82" width="80" height="86" rx="14" fill="#ffffff"/>
+  <rect x="102" y="102" width="52" height="8" rx="4" fill="#0b3d2c"/>
+  <rect x="102" y="120" width="38" height="7" rx="3.5" fill="#0f8a5f" fill-opacity="0.45"/>
+  <rect x="102" y="138" width="46" height="8" rx="4" fill="#a3e04f"/>
+  <!-- Sparkle Badge -->
+  <circle cx="192" cy="70" r="22" fill="#a3e04f"/>
+  <path d="M192 56L195.5 66.5L206 70L195.5 73.5L192 84L188.5 73.5L178 70L188.5 66.5L192 56Z" fill="#072619"/>
+</svg>

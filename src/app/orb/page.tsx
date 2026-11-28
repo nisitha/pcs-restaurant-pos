@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useBranchStore } from '@/stores/branch-store';
+import { Floating3DElement, PulseBeacon } from '@/components/ui/Motion3D';
 
 interface BoardOrder {
   id: string;
@@ -173,9 +174,16 @@ export default function OrderReadyBoardPage() {
       {/* Top TV Header Bar */}
       <header className="px-6 sm:px-10 py-4 bg-[#0b3d2c]/60 border-b border-white/10 flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#0f8a5f] text-[#a3e04f] flex items-center justify-center shadow-lg border border-[#a3e04f]/30">
-            <UtensilsCrossed className="w-6 h-6" />
-          </div>
+          <Floating3DElement amplitude={5} rotate={2} duration={5}>
+            <div className="w-13 h-13 rounded-2xl overflow-hidden bg-[#0f8a5f] shadow-lg border-2 border-[#a3e04f]/40 p-0.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/3d/icon-kds-3d.jpg"
+                alt="Order Ready Board"
+                className="w-full h-full object-cover rounded-xl"
+              />
+            </div>
+          </Floating3DElement>
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-white">
@@ -188,7 +196,7 @@ export default function OrderReadyBoardPage() {
                     : 'bg-amber-500/20 text-amber-300 border-amber-400/30'
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-[#a3e04f] animate-pulse' : 'bg-amber-400'}`} />
+                <PulseBeacon color={isLive ? '#a3e04f' : '#F59E0B'} size="sm" />
                 {isLive ? 'LIVE' : 'SYNCING'}
               </span>
             </div>

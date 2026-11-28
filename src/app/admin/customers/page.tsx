@@ -29,6 +29,7 @@ import {
 import { formatLKR } from '@/lib/utils/currency';
 import { formatRestaurantDateTime } from '@/lib/utils/datetime';
 import { Customer, CustomerTier } from '@/types/crm.types';
+import { Tilt3DCard, Floating3DElement } from '@/components/ui/Motion3D';
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -144,13 +145,21 @@ export default function AdminCustomersPage() {
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1D1F] flex items-center gap-2.5">
-            <Users className="w-7 h-7 text-[#119C49]" /> Customer CRM & Loyalty
-          </h1>
-          <p className="text-xs text-[#7C828D] mt-1">
-            Customer directory, loyalty points ledgers (1 pt / Rs. 100), VIP tiers, and dietary preferences.
-          </p>
+        <div className="flex items-center gap-3.5">
+          <Floating3DElement amplitude={4} rotate={2} duration={5}>
+            <div className="w-13 h-13 rounded-2xl overflow-hidden bg-white border border-[#E5ECE8] shadow-md p-1.5 shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/3d/icon-loyalty-3d.svg" alt="Loyalty 3D" className="w-full h-full object-contain" />
+            </div>
+          </Floating3DElement>
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#072619] flex items-center gap-2.5">
+              Customer CRM &amp; Loyalty
+            </h1>
+            <p className="text-xs text-[#4f675a] mt-0.5">
+              Customer directory, loyalty points ledgers (1 pt / Rs. 100), VIP tiers, and dietary preferences.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -175,49 +184,57 @@ export default function AdminCustomersPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#D1F0DC] text-[#119C49] flex items-center justify-center">
-            <Users className="w-6 h-6" />
+        <Tilt3DCard maxTilt={5} className="rounded-3xl">
+          <div className="h-full bg-white rounded-3xl p-5 border border-[#E5ECE8] shadow-xs flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#cdeeb0]/60 text-[#0f8a5f] flex items-center justify-center shrink-0">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-[#4f675a] font-medium">Registered Guests</p>
+              <p className="font-display text-xl font-black text-[#072619]">{customers.length} Guests</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-[#7C828D] font-medium">Registered Guests</p>
-            <p className="text-xl font-black text-[#1A1D1F]">{customers.length} Guests</p>
-          </div>
-        </div>
+        </Tilt3DCard>
 
-        <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#FEF3E2] text-[#F59E0B] flex items-center justify-center">
-            <Award className="w-6 h-6" />
+        <Tilt3DCard maxTilt={5} className="rounded-3xl">
+          <div className="h-full bg-white rounded-3xl p-5 border border-[#E5ECE8] shadow-xs flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#FEF3E2] text-[#F59E0B] flex items-center justify-center shrink-0">
+              <Award className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-[#4f675a] font-medium">Active Loyalty Points</p>
+              <p className="font-display text-xl font-black text-[#F59E0B] font-mono">{totalPoints} Pts</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-[#7C828D] font-medium">Active Loyalty Points</p>
-            <p className="text-xl font-black text-[#F59E0B] font-mono">{totalPoints} Pts</p>
-          </div>
-        </div>
+        </Tilt3DCard>
 
-        <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#D1F0DC] text-[#119C49] flex items-center justify-center">
-            <Crown className="w-6 h-6" />
+        <Tilt3DCard maxTilt={5} className="rounded-3xl">
+          <div className="h-full bg-white rounded-3xl p-5 border border-[#E5ECE8] shadow-xs flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#cdeeb0]/60 text-[#0f8a5f] flex items-center justify-center shrink-0">
+              <Crown className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-[#4f675a] font-medium">VIP &amp; Corporate Tiers</p>
+              <p className="font-display text-xl font-black text-[#0f8a5f]">
+                {vipCount} VIP &bull; {corporateCount} Corp
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-[#7C828D] font-medium">VIP & Corporate Tiers</p>
-            <p className="text-xl font-black text-[#119C49]">
-              {vipCount} VIP &bull; {corporateCount} Corp
-            </p>
-          </div>
-        </div>
+        </Tilt3DCard>
 
-        <div className="bg-white rounded-3xl p-5 border border-[#EBECEF] shadow-sm flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#F6F7F9] text-[#1A1D1F] flex items-center justify-center">
-            <DollarSign className="w-6 h-6" />
+        <Tilt3DCard maxTilt={5} className="rounded-3xl">
+          <div className="h-full bg-white rounded-3xl p-5 border border-[#E5ECE8] shadow-xs flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#f4fbf7] text-[#072619] flex items-center justify-center shrink-0">
+              <DollarSign className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-[#4f675a] font-medium">Total Lifetime Spend</p>
+              <p className="font-display text-xl font-black text-[#072619] font-mono">
+                {formatLKR(totalCustomerSpend)}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-[#7C828D] font-medium">Total Lifetime Spend</p>
-            <p className="text-xl font-black text-[#1A1D1F] font-mono">
-              {formatLKR(totalCustomerSpend)}
-            </p>
-          </div>
-        </div>
+        </Tilt3DCard>
       </div>
 
       {/* Search Input */}

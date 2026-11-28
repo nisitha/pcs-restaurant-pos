@@ -20,6 +20,7 @@ import { useCartStore } from '@/stores/cart-store';
 import { useBranchStore } from '@/stores/branch-store';
 import { createClient } from '@/lib/supabase/client';
 import { QrTentCardsModal } from '@/components/tables/qr-tent-cards-modal';
+import { Tilt3DCard } from '@/components/ui/Motion3D';
 
 export default function TablesFloorPlanPage() {
   const router = useRouter();
@@ -225,20 +226,20 @@ export default function TablesFloorPlanPage() {
               const timerLabel = getTableTimerLabel(table.table_number, (table as any).updated_at, idx);
 
               return (
-                <motion.div
-                  key={table.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 12, scale: 0.98 },
-                    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2 } },
-                  }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setSelectedTableId(table.id)}
-                  className={`border-2 border-dashed rounded-3xl p-2 sm:p-2.5 transition-all duration-200 cursor-pointer relative ${
-                    isSelected
-                      ? 'border-[#0f8a5f] ring-4 ring-[#0f8a5f]/15 bg-white/60'
-                      : 'border-[#c8dad0] hover:border-[#0f8a5f]/50'
-                  }`}
-                >
+                <Tilt3DCard key={table.id} maxTilt={6} className="rounded-3xl">
+                  <motion.div
+                    variants={{
+                      hidden: { opacity: 0, y: 12, scale: 0.98 },
+                      visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2 } },
+                    }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setSelectedTableId(table.id)}
+                    className={`h-full border-2 border-dashed rounded-3xl p-2 sm:p-2.5 transition-all duration-200 cursor-pointer relative ${
+                      isSelected
+                        ? 'border-[#0f8a5f] ring-4 ring-[#0f8a5f]/15 bg-white/80'
+                        : 'border-[#c8dad0] hover:border-[#0f8a5f]/50'
+                    }`}
+                  >
                   {/* Inside Table Rectangle */}
                   <div
                     className={`rounded-2xl p-3 sm:p-4 w-full min-h-[132px] sm:min-h-[145px] flex flex-col justify-between shadow-xs transition-all ${
@@ -304,6 +305,7 @@ export default function TablesFloorPlanPage() {
                     </div>
                   </div>
                 </motion.div>
+                </Tilt3DCard>
               );
             })}
           </motion.div>
@@ -359,7 +361,13 @@ export default function TablesFloorPlanPage() {
       <aside className="hidden lg:flex w-[370px] xl:w-[390px] bg-white border-l border-[#E5ECE8] flex-col justify-between h-full shrink-0 shadow-lg z-20">
         <div className="p-6 space-y-5 overflow-y-auto scrollbar-none">
           <div className="flex items-center justify-between border-b border-[#E5ECE8] pb-4">
-            <h2 className="font-display text-lg font-extrabold text-[#072619] tracking-tight">Table Captain</h2>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#f4fbf7] border border-[#E5ECE8] shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/3d/captain-tab-3d.jpg" alt="Table Captain" className="w-full h-full object-cover" />
+              </div>
+              <h2 className="font-display text-lg font-extrabold text-[#072619] tracking-tight">Table Captain</h2>
+            </div>
             <div className="px-3 py-1 rounded-xl bg-[#072619] text-[#a3e04f] text-sm font-black font-mono">
               {selectedTable ? `T${selectedTable.table_number.replace(/\D/g, '') || selectedTable.table_number}` : 'T1'}
             </div>

@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useBranchStore } from '@/stores/branch-store';
 import { DeliveryRider } from '@/types/phase4.types';
+import { Floating3DElement } from '@/components/ui/Motion3D';
 
 export default function DeliveryDispatchPage() {
   const { activeBranchId } = useBranchStore();
@@ -148,14 +149,21 @@ export default function DeliveryDispatchPage() {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-[#1A1D1F] flex items-center gap-3">
-            <Bike className="w-8 h-8 text-[#119C49]" />
-            <span>Delivery & Rider Dispatch</span>
-          </h1>
-          <p className="text-sm text-[#7C828D] mt-1">
-            Dispatch online and phone delivery orders to fleet riders with live status tracking.
-          </p>
+        <div className="flex items-center gap-3.5">
+          <Floating3DElement amplitude={4} rotate={2} duration={5.2}>
+            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white border border-[#E5ECE8] shadow-md p-1.5 shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/3d/icon-delivery-3d.svg" alt="Delivery 3D" className="w-full h-full object-contain" />
+            </div>
+          </Floating3DElement>
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl font-black text-[#072619] flex items-center gap-2">
+              <span>Delivery &amp; Rider Dispatch</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-[#4f675a] mt-0.5">
+              Dispatch online and phone delivery orders to fleet riders with live WhatsApp status alerts.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -332,7 +340,8 @@ export default function DeliveryDispatchPage() {
                     className="h-9 px-3 rounded-xl border-[#0f8a5f]/30 bg-[#cdeeb0]/40 hover:bg-[#cdeeb0] text-[#072619] text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer"
                     title="Notify Customer via WhatsApp"
                   >
-                    <MessageCircle className="w-3.5 h-3.5 text-[#0f8a5f]" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/3d/icon-whatsapp-3d.svg" alt="WhatsApp" className="w-4 h-4 object-contain" />
                     <span>WhatsApp</span>
                   </Button>
                 </div>

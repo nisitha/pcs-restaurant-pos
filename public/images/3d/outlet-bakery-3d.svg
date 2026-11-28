@@ -1,0 +1,15 @@
+<svg width="480" height="360" viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="480" height="360" rx="28" fill="#0b3d2c"/>
+  <ellipse cx="240" cy="300" rx="165" ry="26" fill="#072619" fill-opacity="0.7"/>
+  <!-- Counter Base -->
+  <path d="M96 225L240 292L384 225L240 158L96 225Z" fill="#f6ead7"/>
+  <path d="M96 225L240 292V310L96 243V225Z" fill="#c98e49"/>
+  <path d="M240 292L384 225V243L240 310V292Z" fill="#9c6628"/>
+  <!-- Tiered Celebration Cake -->
+  <rect x="184" y="156" width="112" height="54" rx="18" fill="#ffffff"/>
+  <rect x="204" y="114" width="72" height="46" rx="14" fill="#fde68a"/>
+  <circle cx="240" cy="102" r="12" fill="#a3e04f"/>
+  <!-- Croissant & Loaf -->
+  <ellipse cx="145" cy="216" rx="26" ry="14" fill="#eab308"/>
+  <ellipse cx="332" cy="216" rx="28" ry="15" fill="#d97706"/>
+</svg>

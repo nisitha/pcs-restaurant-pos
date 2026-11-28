@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DishImage } from '@/components/ui/dish-image';
 import { ItemCustomizerModal } from '@/components/pos/item-customizer-modal';
+import { Floating3DElement } from '@/components/ui/Motion3D';
 import { useMenuStore } from '@/stores/menu-store';
 import { useBranchStore } from '@/stores/branch-store';
 import { MenuItem } from '@/types/menu.types';
@@ -229,9 +230,16 @@ export default function SelfOrderingKioskPage() {
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E5ECE8] px-5 sm:px-8 py-4 shadow-2xs">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[#072619] text-[#a3e04f] flex items-center justify-center shadow-sm">
-              <UtensilsCrossed className="w-6 h-6" />
-            </div>
+            <Floating3DElement amplitude={4} rotate={1.5} duration={5.2}>
+              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-[#072619] border border-[#0f8a5f]/30 shadow-md p-0.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/3d/kiosk-3d.jpg"
+                  alt="Self-Ordering Kiosk"
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              </div>
+            </Floating3DElement>
             <div>
               <h1 className="font-display text-xl sm:text-2xl font-black text-[#072619] tracking-tight leading-none">
                 PCS Bill <span className="text-[#0f8a5f]">Self-Order Kiosk</span>

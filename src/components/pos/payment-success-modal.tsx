@@ -136,8 +136,8 @@ export function PaymentSuccessModal({
               {formatLKR(totalAmount)}
             </p>
 
-          {/* Key-Value Details */}
-          <div className="w-full mt-4 py-3 border-y border-[#E5ECE8] space-y-2 text-xs">
+          {/* Scalloped Thermal Ticket Preview */}
+          <div className="w-full mt-4 rounded-t-2xl bg-[#f4fbf7] border border-b-0 border-[#E5ECE8] p-3.5 text-left space-y-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-[#4f675a]">Order ID</span>
               <span className="font-bold text-[#072619] font-mono">{orderNumber}</span>
@@ -156,7 +156,21 @@ export function PaymentSuccessModal({
               <span className="text-[#4f675a]">Payment Time</span>
               <span className="font-bold text-[#072619] font-mono">{paymentTime}</span>
             </div>
+            {items.length > 0 && (
+              <div className="pt-2 border-t border-dashed border-[#c8dad0] space-y-1 max-h-24 overflow-y-auto scrollbar-none">
+                {items.slice(0, 4).map((it, i) => (
+                  <div key={i} className="flex items-center justify-between text-[11px] text-[#4f675a]">
+                    <span className="truncate pr-2">{it.quantity}x {it.name}</span>
+                    <span className="font-mono font-bold text-[#072619] shrink-0">{formatLKR(it.price * it.quantity)}</span>
+                  </div>
+                ))}
+                {items.length > 4 && (
+                  <p className="text-[10px] text-[#0f8a5f] font-bold">+{items.length - 4} more items on receipt</p>
+                )}
+              </div>
+            )}
           </div>
+          <div className="w-full h-2 pcs-ticket-scallop mb-1" />
 
           {/* Paper Width Selector Pill */}
           <div className="w-full mt-4">
