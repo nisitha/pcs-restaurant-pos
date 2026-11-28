@@ -28,12 +28,14 @@ import { useBranchStore } from '@/stores/branch-store';
 export default function CustomerFacingDisplayPage() {
   const { activeBranch } = useBranchStore();
 
+  const [mounted, setMounted] = useState<boolean>(false);
   const [liveState, setLiveState] = useState<CfdLivePayload | null>(null);
   const [lankaQrDataUrl, setLankaQrDataUrl] = useState<string>('');
   const [showThankYou, setShowThankYou] = useState<boolean>(false);
 
   // Sync via BroadcastChannel + localStorage storage event (instant dual-monitor sync)
   useEffect(() => {
+    setMounted(true);
     const initial = readCfdState();
     if (initial) {
       setLiveState(initial);
@@ -103,8 +105,8 @@ export default function CustomerFacingDisplayPage() {
     }
   }, []);
 
-  const totalAmount = liveState?.total || 0;
-  const branchName = liveState?.branchName || activeBranch?.name || 'Colombo Main';
+  const totalAmount = mounted ? (liveState?.total || 0) : 0;
+  const branchName = mounted ? (liveState?.branchName || activeBranch?.name || 'Colombo Main') : 'Colombo Main';
 
   useEffect(() => {
     generateQr(totalAmount, branchName);

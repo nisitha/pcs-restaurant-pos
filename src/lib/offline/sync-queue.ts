@@ -122,9 +122,7 @@ export async function syncQueuedOrders(): Promise<{ synced: number; failed: numb
 }
 
 export function useOfflineSync() {
-  const [isOnline, setIsOnline] = useState<boolean>(() =>
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
+  const [isOnline, setIsOnline] = useState<boolean>(true);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
@@ -139,7 +137,7 @@ export function useOfflineSync() {
   }, []);
 
   const triggerSync = useCallback(async () => {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
     if (isSyncingRef.current) return;
     setIsSyncing(true);
     try {
@@ -151,6 +149,9 @@ export function useOfflineSync() {
   }, [refreshCount]);
 
   useEffect(() => {
+    if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean') {
+      setIsOnline(navigator.onLine);
+    }
     refreshCount();
 
     const handleOnline = () => {

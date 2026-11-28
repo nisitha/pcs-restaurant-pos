@@ -112,8 +112,8 @@ export function TicketCard({
 
         {/* Order Info & Destination */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-display text-base font-black text-white tracking-tight truncate">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            <span className="font-display text-sm font-black text-white tracking-tight whitespace-nowrap">
               {ticket.order_number}
             </span>
             {isDineIn && ticket.table_number && (

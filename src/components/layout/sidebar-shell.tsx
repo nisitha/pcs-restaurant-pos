@@ -221,7 +221,7 @@ export function AppSidebarShell({ children }: SidebarShellProps) {
                 <select
                   value={activeBranchId}
                   onChange={(e) => setActiveBranchId(e.target.value)}
-                  className="text-[10px] text-[#0f8a5f] font-bold tracking-wide bg-transparent border-0 p-0 focus:outline-none cursor-pointer truncate max-w-32"
+                  className="text-[10px] text-[#0f8a5f] font-bold tracking-wide bg-transparent border-0 p-0 focus:outline-none cursor-pointer truncate max-w-36"
                   title="Switch Active Branch"
                 >
                   {branches.map((b) => (
